@@ -2,7 +2,7 @@
 import {computed, onActivated, onDeactivated, ref} from 'vue'
 import {useDisplay} from 'vuetify'
 import type {TorrentsInfo} from '@shared/types'
-import {formatPercent, formatSize} from '@shared/format'
+import {formatSize} from '@shared/format'
 import {useTorrentsStore} from '@/stores/torrents'
 import AniSkeleton from '@/components/ani/AniSkeleton.vue'
 
@@ -87,7 +87,7 @@ const sorted = computed(() => {
 /* v-data-table 的表头排序接回上面那份状态：点表头 = 点 chip */
 const tableSort = computed({
   get: () => [{key: sortKey.value, order: (sortAsc.value ? 'asc' : 'desc') as 'asc' | 'desc'}],
-  set: (v: {key: string; order?: 'asc' | 'desc'}[]) => {
+  set: (v: { key: string; order?: 'asc' | 'desc' }[]) => {
     if (!v?.length) return
     sortKey.value = v[0].key
     sortAsc.value = v[0].order !== 'desc'
@@ -122,13 +122,13 @@ async function confirmRemove() {
       <v-btn :loading="manual" prepend-icon="mdi-refresh" variant="tonal" @click="manualReload">刷新</v-btn>
     </div>
 
-<!--
-      报错不再顶掉整张列表。
-      轮询每 3 秒一轮，中间任何一次抖一下（下载器重连、后端超时）都会让 error 亮起来；
-      写成 v-if / v-else 的话，那一瞬间整张列表就没了，下一轮又回来 ——
-      在界面上就是「一闪一闪，怎么也加载不出来」。
-      报错归报错，上一轮拿到的数据还在，照常显示。
-    -->
+    <!--
+          报错不再顶掉整张列表。
+          轮询每 3 秒一轮，中间任何一次抖一下（下载器重连、后端超时）都会让 error 亮起来；
+          写成 v-if / v-else 的话，那一瞬间整张列表就没了，下一轮又回来 ——
+          在界面上就是「一闪一闪，怎么也加载不出来」。
+          报错归报错，上一轮拿到的数据还在，照常显示。
+        -->
     <v-alert v-if="t.error" class="mb-4" density="compact" type="error" variant="tonal">
       读取下载器失败：{{ t.error }}
       <div class="text-caption mt-1">检查「设置 → 下载设置」里的地址与账号。</div>
@@ -151,37 +151,37 @@ async function confirmRemove() {
     <v-card v-else-if="!mobile" variant="flat">
       <!-- 保存路径可以很长，横滚必须发生在卡片里，不能让整页跟着变宽 -->
       <div class="table-scroll">
-      <v-data-table v-model:sort-by="tableSort" :headers="headers" :items="t.items" :items-per-page="25"
-                    density="comfortable" item-value="hash" must-sort>
-        <template #item.name="{item}">
-          <div class="py-1 name-cell">
-            <div class="text-body-2 ellipsis" :title="item.name">{{ item.name }}</div>
-            <div class="text-caption text-medium-emphasis ellipsis" :title="item.savePath">{{ item.savePath }}</div>
-            <!-- 下载器里的标签：ani-rss 会给自己管的种子打标，混着手动加的种子时靠这个分辨 -->
-            <div v-if="item.tagList?.length" class="d-flex flex-wrap ga-1 mt-1">
-              <v-chip v-for="tag in item.tagList" :key="tag" size="x-small" variant="tonal">{{ tag }}</v-chip>
+        <v-data-table v-model:sort-by="tableSort" :headers="headers" :items="t.items" :items-per-page="25"
+                      density="comfortable" item-value="hash" must-sort>
+          <template #item.name="{item}">
+            <div class="py-1 name-cell">
+              <div class="text-body-2 ellipsis" :title="item.name">{{ item.name }}</div>
+              <div class="text-caption text-medium-emphasis ellipsis" :title="item.savePath">{{ item.savePath }}</div>
+              <!-- 下载器里的标签：ani-rss 会给自己管的种子打标，混着手动加的种子时靠这个分辨 -->
+              <div v-if="item.tagList?.length" class="d-flex flex-wrap ga-1 mt-1">
+                <v-chip v-for="tag in item.tagList" :key="tag" size="x-small" variant="tonal">{{ tag }}</v-chip>
+              </div>
             </div>
-          </div>
-        </template>
-        <template #item.completed="{item}">{{ formatSize(item.completed ?? 0) }}</template>
-        <template #item.size="{item}">{{ item.formatSize || formatSize(item.size) }}</template>
-        <template #item.progress="{item}">
-          <div class="d-flex align-center ga-2">
-            <v-progress-linear :color="stateColor(item.state)" :model-value="(item.progress ?? 0) * 100"
-                               height="6" rounded/>
-            <span class="text-caption" style="min-width: 44px">{{ formatPercent(item.progress) }}</span>
-          </div>
-        </template>
-        <template #item.state="{item}">
-          <v-chip :color="stateColor(item.state)" size="x-small" variant="tonal">{{ item.state }}</v-chip>
-        </template>
-        <template #item.actions="{item}">
-          <!-- 宽屏这颗和窄屏卡片里那颗是同一个动作，title 也要一样：
-               只有图标没有名字，鼠标悬上去没提示，读屏也念不出来 -->
-          <v-btn color="error" icon="mdi-delete-outline" size="small" title="删除任务" variant="text"
-                 @click="removing = item"/>
-        </template>
-      </v-data-table>
+          </template>
+          <template #item.completed="{item}">{{ formatSize(item.completed ?? 0) }}</template>
+          <template #item.size="{item}">{{ item.formatSize || formatSize(item.size) }}</template>
+          <template #item.progress="{item}">
+            <div class="d-flex align-center ga-2">
+              <v-progress-linear :color="stateColor(item.state)" :model-value="item.progress"
+                                 height="6" rounded/>
+              <span class="text-caption" style="min-width: 44px">{{ item.progress + '%' }}</span>
+            </div>
+          </template>
+          <template #item.state="{item}">
+            <v-chip :color="stateColor(item.state)" size="x-small" variant="tonal">{{ item.state }}</v-chip>
+          </template>
+          <template #item.actions="{item}">
+            <!-- 宽屏这颗和窄屏卡片里那颗是同一个动作，title 也要一样：
+                 只有图标没有名字，鼠标悬上去没提示，读屏也念不出来 -->
+            <v-btn color="error" icon="mdi-delete-outline" size="small" title="删除任务" variant="text"
+                   @click="removing = item"/>
+          </template>
+        </v-data-table>
       </div>
     </v-card>
 
@@ -201,9 +201,9 @@ async function confirmRemove() {
         <v-card-text class="pb-2">
           <div class="text-body-2 mb-1 ellipsis" :title="item.name">{{ item.name }}</div>
           <div class="d-flex align-center ga-2 mb-1">
-            <v-progress-linear :color="stateColor(item.state)" :model-value="(item.progress ?? 0) * 100"
+            <v-progress-linear :color="stateColor(item.state)" :model-value="item.progress"
                                height="6" rounded/>
-            <span class="text-caption">{{ formatPercent(item.progress) }}</span>
+            <span class="text-caption">{{ item.progress + '%' }}</span>
           </div>
           <!--
             换行只发生在左边那一堆信息里，删除键单独占一格钉在右边。
@@ -249,22 +249,22 @@ async function confirmRemove() {
 /* flex 子项的默认 min-width 是 auto，不清零的话里面的 chip 撑得下多宽它就占多宽，
    把右边的删除键顶出卡片 */
 .min0 {
-    flex: 1 1 auto;
-    min-width: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .table-scroll {
-    overflow-x: auto;
+  overflow-x: auto;
 }
 
 /* 名称列封顶，否则一条长发布名能把「进度」「状态」两列推到视口外 */
 .name-cell {
-    max-width: 46ch;
+  max-width: 46ch;
 }
 
 .ellipsis {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
