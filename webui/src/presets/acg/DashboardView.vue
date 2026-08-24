@@ -18,9 +18,9 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
 </script>
 
 <template>
-  <div class="pa-4 pa-md-6">
+  <div>
     <!-- ── 今天 ── -->
-    <div class="d-flex align-center ga-3 mb-4">
+    <div class="d-flex align-center ga-3 pa-6">
       <h1 class="hero-title">{{ d.todayLabel.value || '今天' }}</h1>
       <v-chip v-if="d.today.value.length" size="small" variant="flat">{{ d.today.value.length }} 部</v-chip>
       <v-spacer/>
@@ -30,7 +30,7 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
 
     <!-- 横向轨道：一屏放不下就左右滑，不换行 —— 换行会把「今天」这一组切成好几层，
          视线要来回扫，就没有「今天就这些」的一眼感 -->
-    <div class="rail mb-8">
+    <div class="rail mb-8 pl-6 pb-6 pt-6">
       <template v-if="d.firstLoad.value">
         <div v-for="i in 6" :key="i" class="rail-item">
           <div class="sk" style="aspect-ratio: .7; width: 100%"/>
@@ -64,14 +64,14 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
     </div>
 
     <!-- ── 数字：一行药丸，不占版面 ── -->
-    <div class="pill-row mb-8">
+    <div class="pill-row mb-8 ml-6">
       <v-chip v-for="(s, i) in d.stats.value" :key="s.key" :prepend-icon="s.icon" :style="{'--i': i}"
               :to="s.to" class="ani-in stat-pill" size="large" variant="flat">
         <strong class="mr-1">{{ s.value }}</strong>{{ s.label }}
       </v-chip>
     </div>
 
-    <div class="two-col">
+    <div class="two-col ml-6">
       <!-- ── 下载中 ── -->
       <section>
         <h2 class="sec-title">下载中</h2>
@@ -130,7 +130,19 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
     scroll-snap-type: x mandatory;
     /* 抬起动作会超出轨道上沿，不留出空间的话阴影和位移都会被裁掉 */
     padding: 10px 4px 16px;
-    margin: -10px -4px -16px;
+    /*
+     * 左边不抵消：这条轨道要从左边 24px 起、右边一直通到屏幕边，
+     * 左内边距是模板上的 pl-6 给的，抵消掉就等于没给。
+     */
+    margin: -10px -4px -16px 0;
+    /*
+     * 左内边距还得再跟 scroll-snap 说一遍。
+     *
+     * snapport 默认按 padding box 对齐，`scroll-snap-align: start` 会把第一张海报
+     * 直接吸到内容起点 —— 那 24px 内边距一上来就被滚掉了，实测第一张卡落在 -4px，
+     * 溢出屏幕左边、左圆角整个被切。scroll-padding 才是 snap 认的那一份。
+     */
+    scroll-padding-left: 24px;
     scrollbar-width: thin;
 }
 
