@@ -144,7 +144,11 @@ async function verify() {
     padding: 18px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 12px;
-    background: rgba(var(--v-theme-on-surface), .03);
+    /* 两层：3% 的淡色压在一块实底上。
+       只写那 3% 的话，带壁纸的皮肤里这块等于全透 —— 壁纸直接透过文字。
+       实底用卡片那一档 alpha，不带壁纸的皮肤 alpha 是 1，观感跟原来一样 */
+    background: linear-gradient(rgba(var(--v-theme-on-surface), .03), rgba(var(--v-theme-on-surface), .03)),
+    rgba(var(--v-theme-surface), var(--ani-card-alpha, var(--ani-surface-alpha, 1)));
 }
 
 /* 爱发电那身紫，但压暗到白字能读：官方徽章的字是转成路径的，没人量过对比度，

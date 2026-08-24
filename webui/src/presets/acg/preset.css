@@ -53,7 +53,20 @@ html[data-ani-mode="light"] .v-divider {
 html[data-ani-mode="light"] :is(.hero-title, .sec-title, .week-title,
                                 .v-empty-state__headline,
                                 .v-empty-state__title,
-                                .v-empty-state__text) {
+                                .v-empty-state__text),
+/*
+ * 还有一批是「落单的说明文字」：设置页里那些不在任何卡片、提示条、输入框里的
+ * 小标题、说明句和外链 —— 捐赠页的「已经捐赠？在这里填入订单号来激活。」
+ * 和「作者想说的话」，通知页的「所有通知共用的默认模版」「通知渠道」。
+ * 它们背后直接就是壁纸，遇到深色的图整句读不出来。
+ *
+ * 这类不给它们垫底板：垫了就是一条条白带子横在图上，背景就看不见了 ——
+ * 底板是给「组件」的，落单的字用描边，既读得出来又不挡图。
+ * 一圈 :not() 把已经有实底的地方排掉，那儿描边是白描白，等于没写。
+ */
+/* 一串 :not() 必须紧贴着 :is( ) 写，中间连换行都不能有 ——
+   CSS 里那个换行就是后代组合符，一断开整条就变成「.text-body-2 里面的某个元素」了 */
+html[data-ani-mode="light"] .v-main :is(.text-caption, .text-body-2, .text-subtitle-1, .text-subtitle-2, a, .v-messages__message):not(.v-card *):not(.v-alert *):not(.v-overlay *):not(.v-field *):not(.v-chip *):not(.v-btn *):not(.v-tabs *) {
     /* 三层叠出来的是一圈**实的**白边，不是一团雾：同一个小半径重复画，
        透明度叠上去才压得住底下的花纹；只写一层大半径的话字一小就糊回去了。
        最后一层放大到 12px，用来把周围一小片底色也提亮，边缘不至于生切 */

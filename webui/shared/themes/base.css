@@ -104,6 +104,24 @@ html[data-ani-theme] .v-card:not(.v-card--variant-tonal):not(.v-card--variant-fl
     background: rgba(var(--v-theme-surface), var(--ani-card-alpha, var(--ani-surface-alpha))) !important;
 }
 
+/*
+ * tonal 的卡片和提示条也要有实底。
+ *
+ * 这两样 Vuetify 都是把那层染色画在 __underlay 上、元素自己 background 是透明的 ——
+ * 上面那条规则又把 tonal 排掉了（怕盖掉染色），于是带壁纸的皮肤里，
+ * 通知页那两行渠道卡、捐赠页那几条状态提示，整块是透的：壁纸直接透过文字，一个字读不出来。
+ *
+ * 垫在元素自己的 background 上，__underlay 的染色仍然压在上面，颜色一点不变，
+ * 只是背后多了一块和卡片同色的实底。不带壁纸的皮肤 alpha 是 1，
+ * 垫上去等于原来的 surface，观感不动。
+ */
+html[data-ani-theme] .v-card--variant-tonal,
+html[data-ani-theme] .v-alert--variant-tonal,
+html[data-ani-theme] .v-alert--variant-outlined,
+html[data-ani-theme] .v-alert--variant-text {
+    background: rgba(var(--v-theme-surface), var(--ani-card-alpha, var(--ani-surface-alpha))) !important;
+}
+
 /* ── 阴影：主题给了就用主题的，没给就保持 Vuetify 的高度体系 ── */
 html[data-ani-theme] .v-card.v-card--variant-elevated,
 html[data-ani-theme] .v-sheet.elevation-4 {
