@@ -82,15 +82,23 @@ html[data-ani-mode="light"] :is(.hero-title, .sec-title, .week-title,
  *   深色不垫 —— 那边有压暗层兜着
  */
 html[data-ani-mode="light"] .v-main :is(
-    .v-chip--variant-tonal, .v-chip--variant-text, .v-chip--variant-plain,
-    .v-btn--variant-tonal, .v-btn--variant-text, .v-btn--variant-plain
+    .v-chip--variant-tonal, .v-chip--variant-text, .v-chip--variant-plain, .v-chip--variant-outlined,
+    .v-btn--variant-tonal, .v-btn--variant-text, .v-btn--variant-plain, .v-btn--variant-outlined
 ):not(.v-tab):not(.v-card *):not(.v-overlay *) {
-    background-color: rgba(var(--v-theme-surface), .86);
+    /*
+     * 不透明，不是 .86。
+     *
+     * 壁纸是随机图，底下是什么完全不可控 —— .86 时最亮的那批图仍然透上来，
+     * 药丸和它上面的字一起被图的花纹搅浑。垫成实底之后，压在上面的
+     * tonal __underlay 和文字颜色一点没变，只是背后那块底不再随图变化。
+     * 白图上药丸本身看不出边界，但它上面的深色字照样读得出来 —— 这一档要保的是字。
+     */
+    background-color: rgb(var(--v-theme-surface));
 }
 
 /* 标签栏整条当一块板，不是八颗药丸。
    不给圆角：设置页那条标签栏本来就是通栏的（下面还压着一条 v-divider），
    给了圆角只有左边看得见、右边被屏幕边切掉，看着像没对齐 */
 html[data-ani-mode="light"] .v-main .v-tabs:not(.v-card *) {
-    background-color: rgba(var(--v-theme-surface), .86);
+    background-color: rgb(var(--v-theme-surface));
 }
