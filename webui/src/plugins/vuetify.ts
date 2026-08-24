@@ -106,5 +106,16 @@ export default createVuetify({
         defaultTheme: 'dark',
         themes: {light: readable(light), dark: readable(dark)},
     },
-    defaults,
+    /*
+     * 标签栏的直角写在这儿，不在各款的 defaults 里。
+     *
+     * VTab 内部就是渲染一颗 VBtn，所以哪一款给 `VBtn: {rounded: 'pill'}`，
+     * 标签就一起吃到药丸圆角 —— 而 rounded 出来的是 `.rounded-pill` 工具类，
+     * 带 !important，CSS 那层怎么写都压不过去，只能在 defaults 这一层拦。
+     * 标签自己没底色，平时看不出来；一悬停 / 一点下去，涌出来的水波纹和底色
+     * 就是个圆头长条，嵌在一排靠下面那条指示线连起来的方标签中间。
+     *
+     * 放在 ...defaults 前面：哪一款真想要圆角标签，自己写 VTab 就能盖掉这条。
+     */
+    defaults: {VTab: {rounded: 0}, ...defaults},
 })

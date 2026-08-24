@@ -16,6 +16,13 @@ const themeItems = computed(() => [
 
 const currentTheme = computed(() => (prefs.themeId ? THEME_MAP.get(prefs.themeId) : undefined))
 
+/* 明暗三档。列成数组是为了下面三颗按钮长一个样 —— 手写三遍迟早写歪一颗 */
+const MODES = [
+  {value: 'light', label: '浅色', icon: 'mdi-weather-sunny'},
+  {value: 'dark', label: '深色', icon: 'mdi-weather-night'},
+  {value: 'system', label: '跟随系统', icon: 'mdi-theme-light-dark'},
+] as const
+
 /**
  * 这一页分两半：
  *  - 外观、显示项存在浏览器本地（键与 ani-rss 自带界面共用，切过来设置还在）
@@ -42,11 +49,25 @@ const serverFields: FieldDef[] = [
   <div>
     <div class="text-caption text-medium-emphasis mb-3">外观与显示项存在本机浏览器，不随配置备份。</div>
 
-    <v-btn-toggle v-model="prefs.mode" class="mb-4" density="comfortable" mandatory variant="outlined">
-      <v-btn prepend-icon="mdi-weather-sunny" value="light">浅色</v-btn>
-      <v-btn prepend-icon="mdi-weather-night" value="dark">深色</v-btn>
-      <v-btn prepend-icon="mdi-theme-light-dark" value="system">跟随系统</v-btn>
-    </v-btn-toggle>
+    <!--
+      不用 v-btn-toggle。那个组件的设计就是把几颗按钮拼成一条、中间一点缝都没有，
+      三个模式挤成一根长条，得靠中间那道分隔线去数「原来是三颗」。
+      预览面板的筛选早先也栽在同一件事上，那边换成了三颗独立按钮，这里跟它一致：
+      每颗自己一个盒子，之间 8px（ga-2，M3 的最小档）。
+      顺带这样也回到了版式体检的取景框里 —— 它第五条量的是「挨着的两颗 .v-btn
+      之间有没有 8px」，而整组的分段按钮（v-btn-toggle）是被那条规则排除掉的，
+      所以这处以前一直漏检。
+    -->
+    <div class="d-flex flex-wrap ga-2 mb-4">
+      <v-btn v-for="m in MODES" :key="m.value"
+             :color="prefs.mode === m.value ? 'primary' : undefined"
+             :prepend-icon="m.icon"
+             :variant="prefs.mode === m.value ? 'flat' : 'outlined'"
+             density="comfortable"
+             @click="prefs.mode = m.value">
+        {{ m.label }}
+      </v-btn>
+    </div>
 
     <div class="d-flex align-center mb-4 ga-3">
       <div class="text-body-2">主题色</div>

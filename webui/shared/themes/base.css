@@ -56,6 +56,16 @@ html[data-ani-theme] .v-btn--icon {
     border-radius: 50%;
 }
 
+/*
+ * 标签栏是直角的，别跟着上面那条吃药丸圆角 —— .v-tab 底子上就是一颗 v-btn。
+ * 真正压得住的那一手在 plugins/vuetify.ts 的 defaults 里（`VTab: {rounded: 0}`）：
+ * 各款给 VBtn 的 rounded 生成的是 `.rounded-pill` 工具类，带 !important，
+ * CSS 这一层写多少都盖不过。这条留着是给「没选皮肤、也没走 defaults」那条路兜底。
+ */
+html[data-ani-theme] .v-tab {
+    border-radius: 0;
+}
+
 html[data-ani-theme] .v-field {
     border-radius: var(--ani-radius-input);
 }

@@ -287,10 +287,11 @@ const alt = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.tit
     justify-content: flex-end;
     align-content: flex-start;
     flex: 0 0 auto;
-    /* 70px 正好放两颗（32 + 4 + 32 = 68），四颗折成规整的 2×2；
-       96px 时是 3 + 1，最后那颗「更多」孤零零吊在第二行 */
-    max-width: 70px;
-    gap: 4px;
+    /* 74px 正好放两颗（32 + 8 + 32 = 72），四颗折成规整的 2×2；
+       再宽一档（96px）就是 3 + 1，最后那颗「更多」孤零零吊在第二行。
+       缝隙跟着 8px 走：图标按钮没有边框，4px 时几颗的水波纹是连着的 */
+    max-width: 74px;
+    gap: 8px;
 }
 
 /*

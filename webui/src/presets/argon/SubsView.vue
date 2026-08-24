@@ -75,11 +75,15 @@ const alt = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.tit
     <div class="d-flex align-center ga-2 mb-4 count">
       <b>{{ s.ani.filtered.length }}</b> 条订阅 · {{ s.ani.enabledCount }} 启用
       <v-spacer/>
-      <v-btn-toggle v-model="s.prefs.showWeek" class="flex-grow-0" density="compact" mandatory rounded="pill"
-                    variant="text">
-        <v-btn :value="true" size="small">按星期</v-btn>
-        <v-btn :value="false" size="small">平铺</v-btn>
-      </v-btn-toggle>
+      <!-- 不用 v-btn-toggle：无边框的两颗按钮被它拼成一条，涟漪和悬停底色连成一片，
+           看上去是一根长条而不是两颗按钮。拆成两颗独立的，之间 8px。 -->
+      <div class="d-flex flex-grow-0 ga-2">
+        <v-btn v-for="w in [{v: true, t: '按星期'}, {v: false, t: '平铺'}]" :key="String(w.v)"
+               :color="s.prefs.showWeek === w.v ? 'primary' : undefined" density="compact" size="small"
+               :variant="s.prefs.showWeek === w.v ? 'tonal' : 'text'" @click="s.prefs.showWeek = w.v">
+          {{ w.t }}
+        </v-btn>
+      </div>
     </div>
 
     <div v-if="s.ani.loading && !s.ani.all.length" class="d-flex flex-column ga-4">
@@ -281,8 +285,9 @@ const alt = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.tit
 .acts {
     display: flex;
     flex-wrap: wrap;
-    /* 见 liquid-glass 那份注释：图标按钮之间 4px 起 */
-    gap: 4px;
+    /* 8px：4px 时几颗图标按钮的水波纹和悬停底色是连着的，一排看着是一根长条。
+       8px 是 M3 的最小档，也是版式体检量的那一条 */
+    gap: 8px;
     margin-top: 2px;
     margin-left: auto;
 }

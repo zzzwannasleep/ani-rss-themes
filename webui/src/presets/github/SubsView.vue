@@ -67,10 +67,15 @@ const desc = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.ti
           {{ s.ani.enabledCount }} 启用
         </span>
         <v-spacer/>
-        <v-btn-toggle v-model="s.prefs.showWeek" class="flex-grow-0" density="compact" mandatory variant="text">
-          <v-btn :value="true" size="small">按星期</v-btn>
-          <v-btn :value="false" size="small">平铺</v-btn>
-        </v-btn-toggle>
+        <!-- 不用 v-btn-toggle：无边框的两颗按钮被它拼成一条，涟漪和悬停底色连成一片，
+             看上去是一根长条而不是两颗按钮。拆成两颗独立的，之间 8px。 -->
+        <div class="d-flex flex-grow-0 ga-2">
+          <v-btn v-for="w in [{v: true, t: '按星期'}, {v: false, t: '平铺'}]" :key="String(w.v)"
+                 :color="s.prefs.showWeek === w.v ? 'primary' : undefined" density="compact" size="small"
+                 :variant="s.prefs.showWeek === w.v ? 'tonal' : 'text'" @click="s.prefs.showWeek = w.v">
+            {{ w.t }}
+          </v-btn>
+        </div>
       </div>
 
       <div v-if="s.ani.loading && !s.ani.all.length" class="px-4">
@@ -126,7 +131,7 @@ const desc = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.ti
 
             <!-- 窄屏时按钮全部收进菜单：Primer 的行动作本来就是「一颗更多」，
                  挤三颗按钮进 360px 的行里会把标题压没 -->
-            <div class="d-flex flex-grow-0 ga-1">
+            <div class="d-flex flex-grow-0 ga-2">
               <template v-if="!mobile">
                 <v-btn v-for="act in compactOf(aniActions(s, a))" :key="act.key" :prepend-icon="act.icon"
                        size="small" variant="outlined" @click.stop="act.run()">{{ act.title }}

@@ -287,9 +287,10 @@ const cover = (a: Ani) => (a.cover ? toApiFile(a.cover) : '')
 .acts {
     display: flex;
     align-items: center;
-    /* 4px 而不是 2px：图标按钮本身没有边框，缝隙就是它们之间唯一的分界；
-       贴到 2px 时一排看着是一整条，不像四颗分开的按钮 */
-    gap: 4px;
+    /* 图标按钮本身没有边框，缝隙就是它们之间唯一的分界。
+       4px 还是不够 —— 水波纹和悬停底色一铺就连成一片。8px 是 M3 的最小档，
+       也是版式体检量的那一条 */
+    gap: 8px;
     margin-top: 10px;
 }
 
