@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {toApiFile} from '@shared/http'
 import {formatEpisodes, formatPercent, fromNow} from '@shared/format'
@@ -15,6 +16,67 @@ const d = useDashboard()
 const router = useRouter()
 
 const cover = (c?: string) => (c ? toApiFile(c) : '')
+
+/* ── 海报轨道的左右翻页 ──
+ *
+ * 轨道自己的滚动条被藏了（一条横杠横在首屏正中间，比它引导的内容还显眼）。
+ * 藏了就得把它提供的两件事补回来：知道还有没有、以及怎么往下走。
+ * 前者靠两侧的箭头按钮在到头时消失，后者靠滚轮和点按钮。
+ */
+const rail = ref<HTMLElement>()
+const canLeft = ref(false)
+const canRight = ref(false)
+
+function sync() {
+    const el = rail.value
+    if (!el) return
+    // 亚像素：scrollLeft 是小数，到底时它可能是 max - 0.5，留 1px 容差
+    canLeft.value = el.scrollLeft > 1
+    canRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+}
+
+/**
+ * 翻页：按**整数张卡**翻，一屏能放几张就翻几张，留一张重叠当上下文。
+ *
+ * 算绝对落点而不是 scrollBy 相对量 —— 用滚轮随手滑过之后 scrollLeft 是个零头，
+ * 相对翻页会把这个零头一路带下去，此后每一屏都卡在半张海报上。
+ * 卡片左边那 24px 内边距也是这么保住的：第 k 张卡停在 k * 步距 时，它离左边正好还是 24px。
+ */
+function page(dir: 1 | -1) {
+    const el = rail.value
+    if (!el) return
+    const first = el.querySelector<HTMLElement>('.rail-item')
+    if (!first) return
+    // 步距 = 卡宽 + 间距。宽度是 clamp() 出来的，只能量不能算
+    const next = first.nextElementSibling as HTMLElement | null
+    const pitch = next ? next.offsetLeft - first.offsetLeft : first.offsetWidth + 16
+    const step = Math.max(1, Math.floor(el.clientWidth / pitch) - 1)
+    el.scrollTo({left: (Math.round(el.scrollLeft / pitch) + dir * step) * pitch, behavior: 'smooth'})
+}
+
+/**
+ * 竖着滚滚轮 → 轨道横着走。
+ *
+ * 两处必须放行，否则鼠标停在海报上时整页就滚不动了：
+ * 触控板本来就在横着滑（deltaX 更大），以及轨道已经顶到这一头。
+ */
+function onWheel(e: WheelEvent) {
+    const el = rail.value
+    if (!el || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+    const max = el.scrollWidth - el.clientWidth
+    if (max <= 0) return
+    if (e.deltaY < 0 ? el.scrollLeft <= 0 : el.scrollLeft >= max - 1) return
+    e.preventDefault()
+    el.scrollLeft += e.deltaY
+}
+
+/* 卡片是定宽的，轨道宽度只随「今天几部」变，图加载完不会再变 —— 盯着数量就够 */
+watch(() => d.today.value.length, () => nextTick(sync))
+onMounted(() => {
+    sync()
+    window.addEventListener('resize', sync)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', sync))
 </script>
 
 <template>
@@ -30,37 +92,44 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
 
     <!-- 横向轨道：一屏放不下就左右滑，不换行 —— 换行会把「今天」这一组切成好几层，
          视线要来回扫，就没有「今天就这些」的一眼感 -->
-    <div class="rail mb-8 pl-6 pb-6 pt-6">
-      <template v-if="d.firstLoad.value">
-        <div v-for="i in 6" :key="i" class="rail-item">
-          <div class="sk" style="aspect-ratio: .7; width: 100%"/>
-        </div>
-      </template>
+    <div class="rail-wrap mb-8">
+      <div ref="rail" class="rail pl-6 pb-6 pt-6" @scroll.passive="sync" @wheel="onWheel">
+        <template v-if="d.firstLoad.value">
+          <div v-for="i in 6" :key="i" class="rail-item">
+            <div class="sk" style="aspect-ratio: .7; width: 100%"/>
+          </div>
+        </template>
 
-      <template v-else-if="d.today.value.length">
-        <div v-for="(a, i) in d.today.value" :key="a.id" :style="{'--i': i}"
-             class="rail-item ani-in" @click="router.push('/subscriptions')">
-          <!-- ani-lift 挂在 .tile 上，不能挂外面那层 rail-item：
-               悬停抬起的那道阴影是画在挂 ani-lift 的元素身上的，而 rail-item 只是
-               排版用的格子、没有圆角 —— 阴影就按方角铺在圆角海报四周，
-               四个角各露出一块方的。挂在真正有圆角的 .tile 上，阴影才跟着圆角走。 -->
-          <div class="tile ani-lift">
-            <v-img :src="cover(a.cover)" aspect-ratio="0.7" class="tile-art" cover>
-              <template #placeholder>
-                <div class="fill-height d-flex align-center justify-center bg-surface-variant">
-                  <v-icon icon="mdi-image-outline"/>
-                </div>
-              </template>
-            </v-img>
-            <div class="tile-veil">
-              <div class="tile-title">{{ a.title }}</div>
-              <div class="tile-sub">{{ formatEpisodes(a.currentEpisodeNumber, a.totalEpisodeNumber) }}</div>
+        <template v-else-if="d.today.value.length">
+          <div v-for="(a, i) in d.today.value" :key="a.id" :style="{'--i': i}"
+               class="rail-item ani-in" @click="router.push('/subscriptions')">
+            <!-- ani-lift 挂在 .tile 上，不能挂外面那层 rail-item：
+                 悬停抬起的那道阴影是画在挂 ani-lift 的元素身上的，而 rail-item 只是
+                 排版用的格子、没有圆角 —— 阴影就按方角铺在圆角海报四周，
+                 四个角各露出一块方的。挂在真正有圆角的 .tile 上，阴影才跟着圆角走。 -->
+            <div class="tile ani-lift">
+              <v-img :src="cover(a.cover)" aspect-ratio="0.7" class="tile-art" cover>
+                <template #placeholder>
+                  <div class="fill-height d-flex align-center justify-center bg-surface-variant">
+                    <v-icon icon="mdi-image-outline"/>
+                  </div>
+                </template>
+              </v-img>
+              <div class="tile-veil">
+                <div class="tile-title">{{ a.title }}</div>
+                <div class="tile-sub">{{ formatEpisodes(a.currentEpisodeNumber, a.totalEpisodeNumber) }}</div>
+              </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
 
-      <v-empty-state v-else class="w-100" icon="mdi-sleep" text="今天没有番要更新，去看看别的吧" title="今天休息"/>
+        <v-empty-state v-else class="w-100" icon="mdi-sleep" text="今天没有番要更新，去看看别的吧" title="今天休息"/>
+      </div>
+
+      <v-btn :disabled="!canLeft" aria-label="往左翻" class="rail-nav rail-nav--l" density="comfortable"
+             icon="mdi-chevron-left" variant="text" @click="page(-1)"/>
+      <v-btn :disabled="!canRight" aria-label="往右翻" class="rail-nav rail-nav--r" density="comfortable"
+             icon="mdi-chevron-right" variant="text" @click="page(1)"/>
     </div>
 
     <!-- ── 数字：一行药丸，不占版面 ── -->
@@ -122,12 +191,28 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
     white-space: nowrap;
 }
 
-/* 横向轨道。scroll-snap 让每次滑动都停在整张海报上，不会停在半张 */
+/* 翻页按钮要贴在轨道两侧，得有个定位参照 */
+.rail-wrap {
+    position: relative;
+}
+
+/*
+ * 横向轨道。
+ *
+ * ── 这里没有 scroll-snap，是删掉的，别再加回来 ──
+ *
+ * 原先是 `scroll-snap-type: x mandatory`，图的是「每次滑动都停在整张海报上」。
+ * 但吸附和滚轮是打架的：滚轮一次推进得小（触控板、精密滚轮一次才几像素），
+ * 刚挪出去就被吸回原位，整条轨道纹丝不动 —— 实测 12px 的滚轮事件推动量为 0。
+ * 换成 proximity 也一样，它的吸附阈值照样盖得住这个量级。
+ *
+ * 「停在整张海报上」改由翻页按钮自己算落点保证（见 page()），比吸附还准；
+ * scroll-padding-left 那条补丁是配合吸附用的，一并没了。
+ */
 .rail {
     display: flex;
     gap: 16px;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
     /* 抬起动作会超出轨道上沿，不留出空间的话阴影和位移都会被裁掉 */
     padding: 10px 4px 16px;
     /*
@@ -135,20 +220,66 @@ const cover = (c?: string) => (c ? toApiFile(c) : '')
      * 左内边距是模板上的 pl-6 给的，抵消掉就等于没给。
      */
     margin: -10px -4px -16px 0;
-    /*
-     * 左内边距还得再跟 scroll-snap 说一遍。
-     *
-     * snapport 默认按 padding box 对齐，`scroll-snap-align: start` 会把第一张海报
-     * 直接吸到内容起点 —— 那 24px 内边距一上来就被滚掉了，实测第一张卡落在 -4px，
-     * 溢出屏幕左边、左圆角整个被切。scroll-padding 才是 snap 认的那一份。
-     */
-    scroll-padding-left: 24px;
-    scrollbar-width: thin;
+    /* 滚动条藏掉：一条横杠横在首屏正中间，比它引导的海报还抢眼。
+       它的两个作用改由两侧按钮承担 —— 见 .rail-nav */
+    scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+    display: none;
+}
+
+/*
+ * 翻页按钮。轨道右边一直通到屏幕边，两侧没有空地能摆，只能压在海报边缘上，
+ * 所以做成和这一款其它卡片同一套材质：磨砂底 + 一圈浅白描边。
+ * 换成实心色块的话，在壁纸上就是挖了两个洞。
+ */
+.rail-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%);
+    color: rgb(var(--v-theme-on-surface));
+    background: rgba(var(--v-theme-surface), var(--ani-card-alpha, var(--ani-surface-alpha, 1)));
+    backdrop-filter: blur(var(--ani-panel-blur, 0px));
+    border: 1px solid rgba(255, 255, 255, .28);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .28);
+    opacity: .85;
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.rail-nav:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.08);
+}
+
+/*
+ * 滑到头了就化掉，不是「变灰留在那儿」—— 没得翻还杵一颗按钮是在骗人点。
+ * 用 :disabled 而不是 v-show：留在 DOM 里才淡得出去，
+ * 同时 disabled 会把它踢出 tab 顺序，不会剩一个看不见却能聚焦的按钮。
+ */
+.rail-nav:disabled {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rail-nav--l {
+    left: 8px;
+}
+
+.rail-nav--r {
+    right: 8px;
+}
+
+/* 触摸屏直接拿手划，按钮只会挡住海报 */
+@media (hover: none) {
+    .rail-nav {
+        display: none;
+    }
 }
 
 .rail-item {
     flex: 0 0 clamp(126px, 30vw, 178px);
-    scroll-snap-align: start;
     cursor: pointer;
 }
 
