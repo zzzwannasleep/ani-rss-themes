@@ -49,6 +49,18 @@ export const usePrefsStore = defineStore('prefs', () => {
     const maxContentWidth = persisted<number>('max-content-width', 1600)
 
     /**
+     * 启动页（上游 3.2.20 加的，键同样沿用它的 `startup-page`）。
+     *
+     * 空串 = 跟随当前界面的落地页。**默认必须是空串，不能写死某个路径**：
+     * 落地页本来就随预设变（github 那款没有总览，落地页是订阅列表），
+     * 写死一个路径等于把这个差异抹平，而这正是十一款界面里能一眼看出来的一处。
+     *
+     * 上游只有 /home 和 /subscriptions 两个选项，其中 /home 是它的总览 ——
+     * 对应我们的 /dashboard，读的时候翻译一下（见 router/index.ts）。
+     */
+    const startupPage = persisted<string>('startup-page', '')
+
+    /**
      * 选中的皮肤 id，空串表示不启用（Vuetify 原生观感）。
      * 默认给当前预设自带的那一款 —— 每款界面的外壳都是照着自家皮肤画的，
      * 首次打开就该是完整的样子，而不是先看到一版没上皮肤的半成品。
@@ -79,7 +91,7 @@ export const usePrefsStore = defineStore('prefs', () => {
 
     return {
         mode, resolved, accent, themeId, loadCustomAssets,
-        showScore, showWeek, showPlaylist, showLastDownloadTime, maxContentWidth,
+        showScore, showWeek, showPlaylist, showLastDownloadTime, maxContentWidth, startupPage,
         cardSize, viewMode, sidebarCollapsed,
     }
 })

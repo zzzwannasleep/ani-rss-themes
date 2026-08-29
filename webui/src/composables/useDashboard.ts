@@ -35,10 +35,13 @@ export function useDashboard() {
      * 「今天更新」直接取 byWeek 的第一组：后端返回 weekList 时已经把今天排在最前，
      * 自己按 Date().getDay() 再算一遍反而会和列表页对不上（时区、以及后端对
      * 「今天还没到更新点」的处理，都在服务端那一份逻辑里）。
+     *
+     * 禁用的订阅要滤掉：它今天不会下任何东西，摆在「今天更新」里是假消息。
+     * 上游 3.2.23 也把首页改成了同一个口径（`1c74ed0`）。
      */
     const todayGroup = computed(() => ani.byWeek[0] ?? {label: '', items: [] as Ani[]})
     const todayLabel = computed(() => todayGroup.value.label)
-    const today = computed(() => todayGroup.value.items)
+    const today = computed(() => todayGroup.value.items.filter(a => a.enable))
 
     /** 最近下载过的，倒序；从未下载的不参与 */
     const recent = computed(() =>

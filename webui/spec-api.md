@@ -3,7 +3,7 @@
 - 全局前缀 `/api`：WebMvcConfig 用 addPathPrefix 给所有 @RestController 统一加上
 - 响应恒为 `Result<T> = {code, message, data, t}`，code 是业务码（非 HTTP 状态码），200~299 成功
 - 「鉴权」列 ✓ = 方法上有 @Auth，需要 `Authorization: <token>` 头（无 Bearer 前缀）
-- 共 **70** 个端点 / 23 个 controller
+- 共 **72** 个端点 / 23 个 controller
 - 免鉴权：`/api/testIpWhitelist`、`/api/custom.css`、`/api/custom.js`、`/api/ping`、`/api/login`
 
 
@@ -182,6 +182,8 @@
 | 方法 | 路径 | 鉴权 | 返回 | 入参 | 说明 |
 |---|---|---|---|---|---|
 | POST | `/api/upload` | ✓ | `Result<Object>` | `@RequestParam("file"` | 上传文件 |
+| POST | `/api/uploadAndRead` | ✓ | `Result<String>` | `@RequestParam("file"` | 上传并读取 |
+| POST | `/api/uploadAndReadToBase64` | ✓ | `Result<String>` | `@RequestParam("file"` | 上传并读取为 base64 |
 
 ## WebUIController
 

@@ -56,7 +56,9 @@ async function testProxy() {
   testing.value = 'proxy'
   try {
     const r = await api.testProxy('https://api.bgm.tv', config.value)
-    ui.success(`代理可用${r?.time ? `，耗时 ${r.time}ms` : ''}`)
+    // title 是后端抓回来的页面标题（3.2.23 起单独放在返回体里，之前是拼在 message 里的）。
+    // 有它才说明真的连通了 —— 只有耗时的话，代理把请求吞掉返回空body 也是「成功」。
+    ui.success(`代理可用${r?.title ? `：${r.title}` : ''}${r?.time ? `，耗时 ${r.time}ms` : ''}`)
   } finally {
     testing.value = ''
   }

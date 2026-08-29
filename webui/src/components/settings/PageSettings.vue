@@ -2,6 +2,8 @@
 import {computed} from 'vue'
 import type {Config} from '@shared/types'
 import {THEMES, THEME_MAP} from '@shared/themes/registry'
+import meta from '@preset/meta'
+import {HOME} from '@/router'
 import {usePrefsStore} from '@/stores/prefs'
 import SettingField from './SettingField.vue'
 import type {FieldDef} from './schema'
@@ -15,6 +17,19 @@ const themeItems = computed(() => [
 ])
 
 const currentTheme = computed(() => (prefs.themeId ? THEME_MAP.get(prefs.themeId) : undefined))
+
+/*
+ * 启动页可选项。总览那条只在有总览的预设上给 —— github 那款压根没有这一页，
+ * 列出来选了也只会被路由退回落地页，看起来像设置没生效。
+ * 第一条留空串，表示「这款界面自己的落地页」，与 prefs 里的默认值对上。
+ */
+const startupItems = [
+  {value: '', title: `跟随界面默认（${meta.dashboard ? '总览' : '订阅'}）`},
+  ...(meta.dashboard ? [{value: HOME, title: '总览'}] : []),
+  {value: '/subscriptions', title: '订阅'},
+  {value: '/downloads', title: '下载'},
+  {value: '/logs', title: '日志'},
+]
 
 /* 明暗三档。列成数组是为了下面三颗按钮长一个样 —— 手写三遍迟早写歪一颗 */
 const MODES = [
@@ -123,6 +138,10 @@ const serverFields: FieldDef[] = [
       <div class="flex-grow-1 pr-4 text-body-2">显示更新时间</div>
       <v-switch v-model="prefs.showLastDownloadTime" color="primary" density="compact" hide-details/>
     </div>
+
+    <div class="text-body-2 mb-2">启动页</div>
+    <v-select v-model="prefs.startupPage" :items="startupItems" class="mb-4"
+              hide-details item-title="title" item-value="value"/>
 
     <div class="d-flex align-center py-1 mb-4">
       <div class="flex-grow-1 pr-4">

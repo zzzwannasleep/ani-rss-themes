@@ -6,7 +6,7 @@
  * 上游是裸模板串拼接（`api/searchBgm?name=${name}`），番剧名里有 & 就会截断，
  * getSubtitles 传 base64 时里面的 '+' 还会被服务端解成空格。
  *
- * 端点清单来源：从 test 分支源码实抽并自校验，共 70 个，成表在 webui/spec-api.md ——
+ * 端点清单来源：从 test 分支源码实抽并自校验，共 72 个，成表在 webui/spec-api.md ——
  * 用 shared/tools/extract-api.mjs 对着上游源码重跑就能更新，
  * 它会核对「抽出来的」和「源码里声明的」是不是一一对上，对不上直接失败。
  * 其中 file / proxyImage 这两个走 <img src>、设不了请求头的在 http.ts 里，不在这份。
@@ -45,26 +45,49 @@ function filePart(file: File): FormData {
 
 /* ==================== 配置 ==================== */
 
-export const getConfig = () => http.post<Config>('api/config')
+/**
+ * bgmImage 是 bgmImageSize 在 3.2.25 以前的名字。types.ts 由生成器照当前源码产出，
+ * 已经没有这个键了，所以在这里单独声明 —— 别写回 types.ts，下次重跑会被覆盖掉。
+ */
+type LegacyConfig = Config & {bgmImage?: string}
+
+export async function getConfig() {
+    const c = await http.post<LegacyConfig>('api/config')
+    // 3.2.25 以下回的是老键，统一成新键给界面用（见下面 setConfig 的说明）
+    if (c.bgmImageSize === undefined) c.bgmImageSize = c.bgmImage
+    return c as Config
+}
 
 /**
  * 保存配置。
  * login.password 必须是 MD5；留空表示不修改密码，这时不能把空串也 MD5 一遍
  * （空串的 MD5 是个有效摘要，会把密码真的改成空密码）。
+ *
+ * BGM 封面质量这个字段上游 3.2.25 把名字从 bgmImage 改成了 bgmImageSize
+ * （`4f20b6d`，默认值同时从 large 改成 medium）。后端两边都是「有这个键就收，没有就不动」，
+ * 所以两个键一起发：老后端认前者，新后端认后者，不用去嗅版本号。
+ * 少发一个的后果是静默的 —— 界面上选了新值，落到后端的还是旧值，没有任何报错。
  */
 export function setConfig(config: Config) {
-    const c: Config = JSON.parse(JSON.stringify(config))
+    const c: LegacyConfig = JSON.parse(JSON.stringify(config))
     if (c.login) {
         c.login.username = c.login.username?.trim()
         const pwd = c.login.password?.trim()
         c.login.password = pwd ? md5(pwd) : ''
     }
+    if (c.bgmImageSize !== undefined) c.bgmImage = c.bgmImageSize
     return http.post<void>('api/setConfig', c)
 }
 
 export const clearCache = () => http.post<void>('api/clearCache')
 export const ping = () => http.get<unknown>('api/ping')
-export const testProxy = (url: string, config: Config) => http.post<ProxyTest>(q('api/testProxy', {url}), config)
+/**
+ * 代理测试。**url 必须 base64**：后端 ConfigService.testProxy 第一行就是
+ * `url = Base64.decodeStr(url)`，传明文进去解出来是一串乱码，请求发不出去，
+ * 界面上只看到「测试失败」，看不出是自己把参数传错了。
+ */
+export const testProxy = (url: string, config: Config) =>
+    http.post<ProxyTest>(q('api/testProxy', {url: base64Encode(url)}), config)
 export const trackersUpdate = (config: Config) => http.post<string>('api/trackersUpdate', config)
 export const downloadLoginTest = (config: Config) => http.post<void>('api/downloadLoginTest', config)
 export const testIpWhitelist = () => http.post<void>('api/testIpWhitelist')
@@ -288,6 +311,18 @@ export const bgmOauthCallback = (code: string) => http.post<void>(q('api/bgm/oau
  * 落盘这一路两个版本的签名一样，不用挑版本。
  */
 export const upload = (file: File) => http.post<string>('api/upload', filePart(file))
+
+/**
+ * 上传并读回文本 / base64，不落盘（3.2.18 起，就是上面那个 type 开关拆出来的两个端点）。
+ *
+ * 我们这边没有调用点：读本地文件浏览器自己就能干（FileReader），
+ * 走一趟后端只是多一次往返，还多一个「后端得够新」的前提。
+ * 之所以还是封装出来，是因为这份文件对着 spec-api.md 一一对应 ——
+ * 缺一个就得每次核对时重新确认是漏了还是故意不接。
+ */
+export const uploadAndRead = (file: File) => http.post<string>('api/uploadAndRead', filePart(file))
+export const uploadAndReadToBase64 = (file: File) =>
+    http.post<string>('api/uploadAndReadToBase64', filePart(file))
 
 /**
  * 用户在「页面设置」里填的自定义 CSS / JS 的地址（免鉴权）。

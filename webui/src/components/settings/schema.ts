@@ -57,6 +57,8 @@ const TMDB_LANGS = [
     {title: '汉语 (zh-TW)', value: 'zh-TW'},
 ]
 
+/* 键名 3.2.25 起是 bgmImageSize（以前叫 bgmImage，同版本默认值也从 large 换成了 medium）。
+   两个键的兼容在 shared/api.ts 的 getConfig / setConfig 里做，这里只认新名字。 */
 const BGM_IMAGE = ['small', 'grid', 'large', 'medium', 'common'].map(v => ({title: v, value: v}))
 
 /* qb 添加任务时的 contentLayout，取值与 qBittorrent 自己的一致（上游 qBittorrent.vue）。
@@ -198,7 +200,7 @@ export const BASIC_SECTIONS: SectionDef[] = [
             // 这两个上游是互斥的：开一个另一个就置灰
             {key: 'enabledExclude', label: '默认启用全局排除', type: 'switch', disabledWhen: c => !!c.importExclude},
             {key: 'importExclude', label: '默认导入全局排除', type: 'switch', disabledWhen: c => !!c.enabledExclude},
-            {key: 'bgmImage', label: '封面质量', type: 'select', items: BGM_IMAGE},
+            {key: 'bgmImageSize', label: '封面质量', type: 'select', items: BGM_IMAGE},
             {key: 'customEpisode', label: '自定义集数规则', type: 'switch'},
             {key: 'customEpisodeStr', label: '集数正则', type: 'text', disabledWhen: c => !c.customEpisode},
             {key: 'customEpisodeGroupIndex', label: '捕获组序号', type: 'number', min: 0,

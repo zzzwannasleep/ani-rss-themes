@@ -326,11 +326,16 @@ Pixelated MS Sans Serif，是因为**中文版 Windows 98 的界面字根本不�
 - **令牌存 `localStorage['authorization']`**，与自带界面同键 —— 在自带界面登录过的人切过来就已经是登录态。
 
 页面显示偏好（`show-score` / `show-week` / `show-playlist` / `show-last-download-time` /
-`max-content-width`）也沿用上游同名的键，切换界面时设置不丢。
+`max-content-width` / `startup-page`）也沿用上游同名的键，切换界面时设置不丢。
+
+`startup-page` 是上游 3.2.20 加的「启动页」。它只有 `/home`（总览）和 `/subscriptions` 两个值，
+我们这边默认是空串 —— 「跟随当前界面的落地页」。写死一个路径会把预设之间的差异抹平：
+github 那款没有总览，落地页本来就是订阅列表。从自带界面切过来时 `/home` 翻译成 `/dashboard`，
+落到没有总览的预设上则回落到该款自己的落地页。
 
 ## 功能覆盖
 
-后端 70 个接口（23 个 controller）全部封装，界面侧对齐上游 64 个 `.vue`：
+后端 72 个接口（23 个 controller）全部封装，界面侧对齐上游 70 个 `.vue`：
 
 - 登录、Bangumi OAuth 回调
 - 订阅：列表（海报/表格、按星期分组、拼音与首字母搜索）、增删改、批量启用/禁用/刮削/更新总集数
@@ -377,14 +382,31 @@ Pixelated MS Sans Serif，是因为**中文版 Windows 98 的界面字根本不�
 
 上游改了字段就重跑一次生成器，diff 即本次接口变更。用法见 [`webui/shared/tools/README.md`](webui/shared/tools/README.md)。
 
-最近一次重跑（对上游 `81f43b5`）diff 出来的就是这次的变更：`About` 里那堆更新字段被抽成了
-独立的 `UpdateInfo`（`About` 现在是 `extends UpdateInfo` 再加一个 `version`），
-另外多了一个 `WebUI`（`owner` / `repo` / `version` / `filename`）—— 正是 `webui.json` 的形状。
+最近一次重跑对的是上游 `3845c8e`（**3.2.27**），diff 出来四处：
+
+- `Config.bgmImage` 改名成 `bgmImageSize`，默认值同时从 `large` 换成 `medium`（3.2.25）。
+  **这是唯一会静默失效的一处** —— 老键名后端不再认，界面上选了新值也存不进去，还不报错。
+  兼容做在 `shared/api.ts`：读的时候 `bgmImageSize ?? bgmImage`，写的时候两个键一起发，
+  老后端认前者、新后端认后者，不用嗅版本号。
+- 登录改成 JWT：`Config` 多了 `jwtKey` / `tokenId`，`Login` 掉了 `ip` / `key`（3.2.18）。
+  客户端契约没变（`POST /api/login` 拿 token，`Authorization` 头带回去），
+  唯一的行为差异是 token 不再随请求续期 —— `loginEffectiveHours` 到点就掉线。
+  `jwtKey` 后端读配置时会清空、写配置时会置 null，界面侧不用管。
+- `ProxyTest` 多了 `title`，同时后端不再把站点标题拼进 `message`（3.2.23）—— 代理测试的提示改读 `title`。
+- `Config.qbContentLayout`（3.2.18）我们早就有了，这轮只是注释跟着源码更新。
+
+上一轮（对 `81f43b5`）的变更：`About` 里那堆更新字段被抽成了独立的 `UpdateInfo`
+（`About` 现在是 `extends UpdateInfo` 再加一个 `version`），另外多了一个 `WebUI`
+（`owner` / `repo` / `version` / `filename`）—— 正是 `webui.json` 的形状。
 所以 `webuiGetUpdate()` 的返回类型从 `About` 改成了 `UpdateInfo`，
 `shared/github.ts` 里那个 `WebuiMeta` 也不再手写字段，直接 `Required<WebUI>`。
 
-端点数用 `shared/tools/extract-api.mjs` 同样核过：70 个 / 23 个 controller，
+端点数用 `shared/tools/extract-api.mjs` 同样核过：72 个 / 23 个 controller，
 和源码里声明的路径一一对上，`/api/webui/*` 那四个都在。
+这一轮多出来的两个是 `/api/uploadAndRead` 和 `/api/uploadAndReadToBase64`：
+3.2.18 把 `/api/upload?type=getBase64` 那个开关拆成了独立端点。
+我们两个都封装了但都不调用 —— 把本地文件读成文本或 base64 浏览器自己就行，
+走一趟后端只是多一次往返，还多一个「后端得够新」的前提。
 抽出来的表就是 [`webui/spec-api.md`](webui/spec-api.md)（方法 / 路径 / 鉴权 / 返回 / 入参），
 和 `types.ts` 一样入库 —— 下次同步重跑一遍，diff 就是这一轮上游动了什么。
 
@@ -430,7 +452,7 @@ Pixelated MS Sans Serif，是因为**中文版 Windows 98 的界面字根本不�
 webui/
 ├── shared/                十一款共用，不含 UI 组件
 │   ├── http.ts            传输层：Result 拆包、令牌、子路径自适应
-│   ├── api.ts             70 个端点的具名封装
+│   ├── api.ts             72 个端点的具名封装
 │   ├── types.ts           从 Java 实体生成
 │   ├── format.ts          体积/时间/集数格式化
 │   ├── player.ts          webplayer 接入：地址拼装与部署探测

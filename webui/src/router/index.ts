@@ -29,8 +29,27 @@ const dash = () => import('@preset/DashboardView.vue')
 /** 落地页的路径，导航表也从这儿取，两处别各写各的 */
 export const HOME = meta.dashboard ? '/dashboard' : '/subscriptions'
 
+/**
+ * 用户在「页面设置」里选的启动页，没选（或选了这款界面没有的页）就回落到 HOME。
+ *
+ * 直接读 localStorage 而不是 usePrefsStore()：这段在路由解析期跑，
+ * 而 pinia 是在 main.ts 里装的 —— 绕开这个先后顺序比去保证它更省事。
+ * 键名与写入方（stores/prefs.ts 的 startupPage）必须一致。
+ *
+ * 白名单是必须的：值可能来自上游自带界面写的同一个键，也可能是用户手改的，
+ * 不认识就当没设。redirect 指到不存在的路径会打到 404 兜底，而兜底又重定向回 '/' —— 死循环。
+ */
+const startupPaths = [HOME, '/subscriptions', '/downloads', '/logs']
+
+function resolveStartup(): string {
+    let v = localStorage.getItem('startup-page') ?? ''
+    // 上游的总览叫 /home，我们叫 /dashboard；没有总览的预设上它就落回 HOME
+    if (v === '/home') v = HOME
+    return startupPaths.includes(v) ? v : HOME
+}
+
 const children: RouteRecordRaw[] = [
-    {path: '', redirect: HOME},
+    {path: '', redirect: resolveStartup},
     ...(meta.dashboard ? [{path: 'dashboard', name: 'dashboard', component: dash}] : []),
     {path: 'subscriptions', name: 'subscriptions', component: subs},
 ]

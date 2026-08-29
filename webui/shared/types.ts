@@ -381,7 +381,7 @@ export interface Config {
     downloadToolPassword?: string
     /** qb下载时，使用qb自身的保存路径配置(未下载完成的使用临时目录，复制种子文件) */
     qbUseDownloadPath?: boolean
-    /** qb下载时的内容布局：Original 原始 / Subfolder 创建子文件夹 / NoSubfolder 不创建子文件夹 */
+    /** qb下载时的内容布局 <ul> <li>Original：原始布局</li> <li>Subfolder：创建子文件夹</li> <li>NoSubfolder：不创建子文件夹</li> </ul> */
     qbContentLayout?: string
     /** 分享率 */
     ratioLimit?: number
@@ -398,6 +398,8 @@ export interface Config {
     priorityKeywordsEnable?: boolean
     /** 优先保留关键词列表 */
     priorityKeywords?: string[]
+    /** 校验登录IP */
+    verifyLoginIp?: boolean
     /** 延迟下载 */
     delayedDownload?: number
     /** RSS 间隔(分钟) */
@@ -504,8 +506,6 @@ export interface Config {
     renameDelYear?: boolean
     /** 重命名时剔除 tmdbId [tmdbid=242143] */
     renameDelTmdbId?: boolean
-    /** 校验登录IP */
-    verifyLoginIp?: boolean
     /** 自动更新 trackers */
     autoTrackersUpdate?: boolean
     /** Trackers更新地址 */
@@ -517,7 +517,7 @@ export interface Config {
     /** 版本 */
     version?: string
     /** 获取BGM封面图片质量 */
-    bgmImage?: string
+    bgmImageSize?: string
     /** 自定义CSS */
     customCss?: string
     /** 自定义JS */
@@ -594,6 +594,8 @@ export interface Config {
     autoStart?: boolean
     allowCors?: boolean
     uuid?: string
+    jwtKey?: string
+    tokenId?: string
 }
 
 /** EmbyViews —— Emby 媒体库 */
@@ -813,10 +815,6 @@ export interface Login {
     username?: string
     /** 密码 */
     password?: string
-    /** ip */
-    ip?: string
-    /** key */
-    key?: string
 }
 
 /** Mikan —— mikan */
@@ -1059,6 +1057,8 @@ export interface PlayItemSubtitles {
 
 /** ProxyTest —— 代理测试 相应体 */
 export interface ProxyTest {
+    /** 标题 */
+    title?: string
     /** 状态码 */
     status?: number
     /** 耗时 */
