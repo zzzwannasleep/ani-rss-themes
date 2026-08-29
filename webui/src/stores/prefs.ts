@@ -59,6 +59,13 @@ export const usePrefsStore = defineStore('prefs', () => {
      * 对应我们的 /dashboard，读的时候翻译一下（见 router/index.ts）。
      */
     const startupPage = persisted<string>('startup-page', '')
+    /*
+     * 上游用的是 useLocalStorage('startup-page', '/home')，vueuse 读一次就把默认值写回去了 ——
+     * 打开过自带界面的浏览器里这个键必定是 '/home'，不是空的。路由那边认得它（会翻成落地页），
+     * 但设置页下拉框的选项里没有这个值，匹配不上就显示成空白，看着像设置丢了。
+     * 这里统一成我们的写法。写回去也不会影响上游：'/dashboard' 不在它的白名单里，它照样回落到 /home。
+     */
+    if (startupPage.value === '/home') startupPage.value = meta.dashboard ? '/dashboard' : ''
 
     /**
      * 选中的皮肤 id，空串表示不启用（Vuetify 原生观感）。
