@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 import type {Ani} from '@shared/types'
+import * as api from '@shared/api'
 import {useAniStore} from '@/stores/ani'
 
 const props = defineProps<{items: Ani[]}>()
@@ -10,6 +11,26 @@ const ani = useAniStore()
 const dialog = ref(true)
 const deleteFiles = ref(false)
 const busy = ref(false)
+
+/**
+ * 要删的到底是哪个目录。
+ *
+ * 「无法撤销」这四个字不解决问题 —— 人在按下去之前想知道的是「删的是哪儿」。
+ * 下载路径可以是全局默认拼出来的，也可以是这条订阅自己覆盖的，光看订阅名猜不出来，
+ * 所以问后端要（上游删除框也是这么干的）。
+ *
+ * 只在单选时查：多选时每条路径都不一样，列一长串没人看，还要打 N 个请求。
+ * 查不到就不显示，别拿一个次要信息挡住删除本身。
+ */
+const path = ref('')
+watch(deleteFiles, async v => {
+  if (!v || path.value || props.items.length !== 1) return
+  try {
+    path.value = (await api.downloadPath(props.items[0])).downloadPath
+  } catch {
+    // 后端答不上来就算了，删除照常
+  }
+})
 
 async function confirm() {
   busy.value = true
@@ -41,6 +62,9 @@ async function confirm() {
                     label="同时删除已下载的文件"/>
         <v-alert v-if="deleteFiles" class="mt-3" density="compact" type="warning" variant="tonal">
           磁盘上已下载的文件会一并删除，无法撤销。
+          <div v-if="path" class="mt-1">
+            会删掉整个目录：<code class="path">{{ path }}</code>
+          </div>
         </v-alert>
       </v-card-text>
       <v-card-actions>
@@ -51,3 +75,11 @@ async function confirm() {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+/* 路径可以很长且没有空格，不给断点会把对话框撑宽 */
+.path {
+    font-size: .78rem;
+    word-break: break-all;
+}
+</style>

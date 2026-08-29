@@ -4,19 +4,34 @@ import * as api from '@shared/api'
 import {useConfigStore} from '@/stores/config'
 import {useUiStore} from '@/stores/ui'
 import {pickedFile} from '@/composables/pickedFile'
+import DangerConfirm from '@/components/common/DangerConfirm.vue'
 
 const store = useConfigStore()
 const ui = useUiStore()
 /** 单选时 v-file-input 给的是 File 本身，不是数组 —— 取值一律经 pickedFile */
 const file = ref<File | File[] | null>(null)
 const busy = ref('')
+const confirming = ref(false)
+
+/**
+ * 导入前先拦一道。
+ *
+ * 后端的 importConfig 是整包覆盖：设置、订阅、下载记录全换成压缩包里那份，
+ * 覆盖掉的东西没有任何回退路径（除非用户自己先导出过一份）。
+ * 按钮就挨着「导出设置」，手滑点错的代价和点对的代价差得太远。
+ */
+function askImport() {
+  if (!pickedFile(file.value)) return ui.error('请先选择备份文件')
+  confirming.value = true
+}
 
 async function doImport() {
   const f = pickedFile(file.value)
-  if (!f) return ui.error('请先选择备份文件')
+  if (!f) return
   busy.value = 'import'
   try {
     await api.importConfig(f)
+    confirming.value = false
     ui.success('导入完成，正在重新读取配置')
     await store.load(true)
     file.value = null
@@ -62,8 +77,15 @@ async function doClearCache() {
         show-size
     />
     <v-btn :disabled="!pickedFile(file)" :loading="busy === 'import'" color="primary"
-           prepend-icon="mdi-download" variant="flat" @click="doImport">
+           prepend-icon="mdi-download" variant="flat" @click="askImport">
       导入设置
     </v-btn>
+
+    <DangerConfirm v-model="confirming" :loading="busy === 'import'" ok-text="继续导入" @ok="doImport">
+      会用备份里的内容<strong>覆盖</strong>现在的设置、订阅和下载记录，覆盖掉的部分无法撤销。
+      <div class="text-caption text-medium-emphasis mt-2">
+        想留退路的话，先点上面的「导出设置」存一份当前的。
+      </div>
+    </DangerConfirm>
   </div>
 </template>

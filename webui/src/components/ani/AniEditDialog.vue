@@ -10,6 +10,7 @@ import {useUiStore} from '@/stores/ui'
 import StringListField from '@/components/common/StringListField.vue'
 import SourceBrowserDialog from './SourceBrowserDialog.vue'
 import PreviewDialog from './PreviewDialog.vue'
+import DangerConfirm from '@/components/common/DangerConfirm.vue'
 
 const props = defineProps<{
   item: Ani
@@ -38,13 +39,31 @@ function close() {
   emit('close')
 }
 
-async function save() {
+const confirmMove = ref(false)
+
+/**
+ * 勾了「同时移动已下载的文件」就先拦一道。
+ *
+ * 那个勾选传到后端是把整个已下载目录搬到新路径 —— 路径填错了，文件就散在一个
+ * 谁也不会去看的目录里，界面上没有「撤销移动」这回事。勾选框本身就在保存按钮旁边，
+ * 顺手点上再顺手保存是一气呵成的两下。
+ */
+function save() {
+  if (!props.isNew && move.value) {
+    confirmMove.value = true
+    return
+  }
+  void doSave()
+}
+
+async function doSave() {
   saving.value = true
   try {
     if (props.isNew) {
       emit('submit', form.value)
     } else {
       await ani.update(form.value, move.value)
+      confirmMove.value = false
       close()
     }
   } finally {
@@ -611,6 +630,13 @@ async function fillDownloadPath() {
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <DangerConfirm v-model="confirmMove" :loading="saving" ok-text="执意继续移动" @ok="doSave">
+    保存的同时会把这条订阅<strong>已下载的整个目录</strong>搬到新路径，搬完不能撤销。
+    <div class="text-caption text-medium-emphasis mt-2">
+      只想改配置、不动文件的话，取消后把「同时移动已下载的文件」的勾去掉再保存。
+    </div>
+  </DangerConfirm>
 
   <!-- 带着这条订阅去番剧站换字幕组：定位到这部番，不用重新搜 -->
   <SourceBrowserDialog v-model="browsing" :preset="form" :source="browseSource" @pick="onPicked"/>
