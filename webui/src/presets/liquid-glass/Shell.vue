@@ -140,7 +140,8 @@ const s = useShell()
 
 .nav-bottom {
     left: 50%;
-    bottom: 14px;
+    /* 小白条：胶囊是 fixed 的，不抬就正好压在 home indicator 上 */
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
 }
 
@@ -167,8 +168,9 @@ const s = useShell()
 
 .pad-bottom {
     padding-top: 74px;
-    padding-bottom: 88px;
+    /* 88px 是胶囊连边距的高度，再加小白条那一截 —— 胶囊已经跟着抬上去了 */
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
     --ani-page-top: 74px;
-    --ani-page-bottom: 88px;
+    --ani-page-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 </style>

@@ -81,7 +81,8 @@ const menu = ref(false)
     </div>
   </v-navigation-drawer>
 
-  <v-main>
+  <!-- 小白条那一截 Vuetify 不知道（--v-layout-bottom 只按 height=68 算），整屏高度的页面要自己扣 -->
+  <v-main :style="phone ? {'--ani-page-bottom': 'env(safe-area-inset-bottom, 0px)'} : undefined">
     <div v-if="phone && s.showSearch.value" class="pb-0 px-3 pt-3">
       <v-text-field v-model="s.ani.keyword" clearable hide-details placeholder="搜索订阅"
                     prepend-inner-icon="mdi-magnify"/>
@@ -93,6 +94,7 @@ const menu = ref(false)
         <component :is="Component"/>
       </keep-alive>
     </router-view>
+    <div v-if="phone" :style="{height: 'env(safe-area-inset-bottom, 0px)'}"/>
   </v-main>
 
   <v-bottom-navigation v-if="phone" :elevation="0" class="ab-tabs" grow height="68">
@@ -240,11 +242,16 @@ const menu = ref(false)
     background: transparent !important;
     box-shadow: none;
     border: none;
+    /*
+     * 小白条：整条抬高一个安全区，浮板跟着往上走（下面那条 margin 也加了同样的量）。
+     * 高度是 Vuetify 写死的内联样式，只能 !important 盖。
+     */
+    height: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 .ab-tabs :deep(.v-bottom-navigation__content) {
     height: 56px;
-    margin: 0 var(--ab-gap) var(--ab-gap);
+    margin: 0 var(--ab-gap) calc(var(--ab-gap) + env(safe-area-inset-bottom, 0px));
     border: 1px solid rgba(var(--v-theme-on-surface), .12);
     border-radius: var(--ab-radius);
     background: rgb(var(--v-theme-surface));

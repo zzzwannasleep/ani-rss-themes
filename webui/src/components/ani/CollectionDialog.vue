@@ -193,6 +193,23 @@ async function showPath() {
   }
 }
 
+/**
+ * 填入「不启用自定义路径时会下到哪」，当作改模板的起点。
+ *
+ * 和 AniEditDialog 一样先把 customDownloadPath 置 false 再算 —— 不置的话
+ * 后端会拿你正在编辑的这个模板去算，等于原样返回。
+ */
+async function fillDownloadPath() {
+  busy.value = 'fillPath'
+  try {
+    const r = await api.downloadPath({...data.value.ani, customDownloadPath: false})
+    data.value.ani = {...data.value.ani, customDownloadPathTemplate: r.downloadPath}
+    ui.success('已填入当前的默认下载位置')
+  } finally {
+    busy.value = ''
+  }
+}
+
 async function doPreview() {
   if (!data.value.torrent) return ui.error('请先选择种子文件')
   busy.value = 'preview'
@@ -307,6 +324,49 @@ function reset() {
         <v-text-field v-model="data.ani!.subgroup" class="mb-3" hint="留空则由后端从种子名推断"
                       label="字幕组" persistent-hint/>
 
+        <!--
+          自定义位置和重命名模板。
+
+          合集一次落的是一整季，模板不对就是一整季文件全放错地方、全得手工挪。
+          这两项在 blankAni() 里一直有字段、也一直跟着 preview / start 发给后端，
+          界面上却没有入口 —— 等于只能吃全局模板，普通订阅能改的这里改不了。
+          折进折叠面板而不是平铺：多数合集不用改，但要改的时候必须改得到。
+        -->
+        <v-expansion-panels class="mb-3" multiple variant="accordion">
+          <v-expansion-panel title="自定义位置">
+            <template #text>
+              <v-switch v-model="data.ani!.customDownloadPath" class="mb-2" color="primary" hide-details
+                        label="启用"/>
+              <v-text-field v-model="data.ani!.customDownloadPathTemplate"
+                            :disabled="!data.ani?.customDownloadPath" label="路径模版"/>
+              <div class="d-flex align-center flex-wrap ga-2 mt-3">
+                <v-btn :disabled="!data.ani?.customDownloadPath" :loading="busy === 'fillPath'" size="small"
+                       variant="tonal" @click="fillDownloadPath">
+                  填入默认位置
+                </v-btn>
+                <span class="text-caption text-medium-emphasis">最终位置点下面的「下载位置」核对</span>
+              </div>
+            </template>
+          </v-expansion-panel>
+
+          <v-expansion-panel title="重命名模版">
+            <template #text>
+              <v-switch v-model="data.ani!.customRenameTemplateEnable" class="mb-2" color="primary" hide-details
+                        label="启用"/>
+              <v-text-field v-model="data.ani!.customRenameTemplate"
+                            :disabled="!data.ani?.customRenameTemplateEnable"
+                            label="模版" placeholder="${title} S${seasonFormat}E${episodeFormat}"/>
+              <a class="text-caption doc-link touch-link"
+                 href="https://docs.wushuo.top/config/basic/rename#rename-template"
+                 rel="noopener" target="_blank">
+                可用占位符看文档
+                <v-icon icon="mdi-open-in-new" size="12"/>
+              </a>
+              <!-- 改完直接预览：这一栏的对错在「→ 重命名后」那列一眼能看出来 -->
+            </template>
+          </v-expansion-panel>
+        </v-expansion-panels>
+
         <div class="d-flex flex-wrap ga-2 mb-3">
           <v-btn :loading="busy === 'preview'" prepend-icon="mdi-eye-outline" variant="tonal" @click="doPreview">
             预览剧集
@@ -390,3 +450,18 @@ function reset() {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.doc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 6px;
+    color: rgb(var(--v-theme-primary));
+    text-decoration: none;
+}
+
+.doc-link:hover {
+    text-decoration: underline;
+}
+</style>

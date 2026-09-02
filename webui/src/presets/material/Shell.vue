@@ -54,8 +54,10 @@ const s = useShell()
     </v-list>
   </v-navigation-drawer>
 
-  <!-- 手机上底部垫了 72px 给导航条让位，整屏高度的页面（设置/日志）要把它扣掉 -->
-  <v-main :style="mobile ? {'--ani-page-bottom': '72px'} : undefined">
+  <!-- 手机上底部垫了 72px 给导航条让位，整屏高度的页面（设置/日志）要把它扣掉。
+       再加一条 safe-area-inset-bottom：全面屏那根小白条压在导航条上，
+       Vuetify 按 height 属性算的 --v-layout-bottom 里没有它，只能自己补 -->
+  <v-main :style="mobile ? {'--ani-page-bottom': 'calc(72px + env(safe-area-inset-bottom, 0px))'} : undefined">
     <div v-if="s.showSearch.value && mobile" class="pa-3 pb-0">
       <v-text-field v-model="s.ani.keyword" clearable density="compact" hide-details
                     placeholder="搜索订阅" prepend-inner-icon="mdi-magnify" rounded="pill"
@@ -73,7 +75,7 @@ const s = useShell()
       </keep-alive>
     </router-view>
     <!-- 底部导航挡住内容尾巴，给一段安全垫 -->
-    <div v-if="mobile" style="height: 72px"/>
+    <div v-if="mobile" :style="{height: 'calc(72px + env(safe-area-inset-bottom, 0px))'}"/>
   </v-main>
 
   <v-bottom-navigation v-if="mobile" :elevation="2" grow>
@@ -111,5 +113,21 @@ const s = useShell()
     font-size: .7rem;
     margin-top: 4px;
     line-height: 1.1;
+}
+
+/*
+ * 小白条（iOS 全面屏的 home indicator）。
+ *
+ * Vuetify 把高度写成内联样式（VBottomNavigation.js 里的 `height: convertToUnit(height)`），
+ * 类选择器盖不过去，所以这条要 !important。整条抬高一个安全区、内容再往上垫同样高度：
+ * 条子的底色一直铺到屏幕底边（不抬的话小白条底下会露出一条页面内容），
+ * 按钮却停在小白条上面 —— 按钮的 height:100% 算的是内容盒，垫多少就让多少。
+ */
+.v-bottom-navigation {
+    height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+.v-bottom-navigation :deep(.v-bottom-navigation__content) {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 </style>
