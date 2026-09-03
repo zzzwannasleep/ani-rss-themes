@@ -2,6 +2,7 @@ import {defineStore} from 'pinia'
 import {computed, ref} from 'vue'
 import {clearableText} from '@/composables/clearableText'
 import * as api from '@shared/api'
+import {normalizeLog} from '@shared/logs'
 import type {Log} from '@shared/types'
 import {useUiStore} from './ui'
 
@@ -19,7 +20,9 @@ export const useLogsStore = defineStore('logs', () => {
     async function reload() {
         loading.value = true
         try {
-            items.value = await api.logs()
+            /* 进门就把两种版本的形状归一（见 shared/logs.ts）：
+               下游的过滤和渲染只认「ts + 纯正文」，不用各自判一遍后端是哪一版 */
+            items.value = (await api.logs()).map(normalizeLog)
         } finally {
             loading.value = false
         }

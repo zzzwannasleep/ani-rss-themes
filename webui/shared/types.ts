@@ -799,6 +799,7 @@ export interface ListAniWeekAni {
 
 /** Log —— 日志 */
 export interface Log {
+    ts?: number
     /** 日志信息 */
     message?: string
     /** 日志级别 */

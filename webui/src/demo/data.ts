@@ -179,7 +179,14 @@ const LOG_SEED: Log[] = [
 export const LOGS: Log[] = Array.from({length: 60}, (_, i) => {
     const seed = LOG_SEED[i % LOG_SEED.length]
     const tail = i === 59 ? '（最后一行）' : ''
-    return {...seed, message: `#${String(i + 1).padStart(2, '0')} ${seed.message}${tail}`}
+    return {
+        ...seed,
+        /* 照 3.2.28 的形状给：ts 单独一个字段，message 只有正文。
+           不给 ts 的话时间那一列在演示产物上永远是空的 —— 版式体检也就永远量不到它。
+           每条隔 3 秒往前排，最后一条落在「现在」 */
+        ts: Date.now() - (59 - i) * 3000,
+        message: `#${String(i + 1).padStart(2, '0')} ${seed.message}${tail}`,
+    }
 })
 
 /** 设置页要的完整配置。字段太多，只给会被显示的那些，其余交给控件的默认值 */

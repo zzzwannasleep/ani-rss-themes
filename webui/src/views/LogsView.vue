@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed, nextTick, onActivated, onDeactivated, ref, watch} from 'vue'
 import {downloadLogsUrl} from '@shared/api'
+import {logTime, logTimeFull} from '@shared/logs'
 import {useLogsStore} from '@/stores/logs'
 
 const logs = useLogsStore()
@@ -113,6 +114,10 @@ function levelColor(l?: string) {
     <v-card class="flex-grow-1 overflow-hidden" variant="flat">
       <div ref="box" class="log-box" @scroll="onScroll">
         <div v-for="(l, i) in logs.filtered" :key="i" class="log-line">
+          <!-- 时间自己占一列。3.2.28 以前它藏在 message 里跟着正文一起显示，
+               新版本拆出来成了 ts —— 不单独摆一列的话，升级完时间就整个没了。
+               认不出时间的行留空，那一列宽度是定的，正文左边缘不会跟着错位。 -->
+          <span class="log-time flex-shrink-0" :title="logTimeFull(l.ts)">{{ logTime(l.ts) }}</span>
           <v-chip :color="levelColor(l.level)" class="mr-2 flex-shrink-0" label size="x-small" variant="tonal">
             {{ l.level }}
           </v-chip>
@@ -199,6 +204,14 @@ function levelColor(l?: string) {
     display: flex;
     align-items: flex-start;
     padding: 1px 0;
+}
+
+/* 时间和类名一个待遇：压暗当次要信息，定宽（HH:mm:ss 正好 8ch）让各行对齐。
+   老后端上认不出时间的行这一列是空的，宽度照占，正文不会跟着往左窜 */
+.log-time {
+    width: 8ch;
+    margin-right: 8px;
+    opacity: .55;
 }
 
 /* 类名放在级别和正文之间，压暗当次要信息；定宽让多行的正文左边缘对齐 */

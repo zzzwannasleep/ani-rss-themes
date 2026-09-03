@@ -343,7 +343,7 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 - 订阅编辑四个标签页（基本 / 备用 RSS / 自定义 / 其它），含自定义集数规则、路径、上传、完结迁移、重命名模版、标签、优先保留
 - 预览匹配结果（含遗漏集数推断）、合集下载、导入订阅、封面重抓、Bangumi 评分、视频列表
 - 下载器任务（可见时轮询，3 秒）、删除任务
-- 日志（可见时轮询、级别过滤、跟随最新、下载、清空）
+- 日志（可见时轮询、时间/级别/类名列、级别与类名多选过滤、跟随最新、下载、清空）
 - 设置 8 个标签页 / 基本设置 9 个折叠面板 / 通知 10 种类型，共 121 个配置字段
 - 备份导入导出、缓存清理、检查更新、重启与停止服务
 
@@ -382,7 +382,16 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 
 上游改了字段就重跑一次生成器，diff 即本次接口变更。用法见 [`webui/shared/tools/README.md`](webui/shared/tools/README.md)。
 
-最近一次重跑对的是上游 `3845c8e`（**3.2.27**），diff 出来四处：
+最近一次重跑对的是上游 `f4d3530`（**3.2.28**），整个接口面只 diff 出一处：
+
+- `Log` 多了 `ts`（毫秒时间戳），同时 `message` 里那截 `日期 级别 [线程] 类名 - ` 没了，
+  只剩正文（3.2.28 `6db60f0`）。**升级完时间会整个消失** —— 我们界面上级别和类名各有各的列，
+  时间原来是混在正文里显示的，没人给它单独留过位置。
+  兼容做在 `shared/logs.ts`：`normalizeLog()` 认字段不认版本号，老形状进来先把头削掉、
+  时间还原成 `ts`，下游只写一套；日志页新加一列时间，认不出时间的行留空、宽度照占。
+  断言在 `shared/logs.test.ts`（`node --run test:logs`）。
+
+再上一轮（`3845c8e`，**3.2.27**）的四处，兼容都还在代码里，一并留档：
 
 - `Config.bgmImage` 改名成 `bgmImageSize`，默认值同时从 `large` 换成 `medium`（3.2.25）。
   **这是唯一会静默失效的一处** —— 老键名后端不再认，界面上选了新值也存不进去，还不报错。
@@ -395,15 +404,15 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 - `ProxyTest` 多了 `title`，同时后端不再把站点标题拼进 `message`（3.2.23）—— 代理测试的提示改读 `title`。
 - `Config.qbContentLayout`（3.2.18）我们早就有了，这轮只是注释跟着源码更新。
 
-上一轮（对 `81f43b5`）的变更：`About` 里那堆更新字段被抽成了独立的 `UpdateInfo`
+再往前一轮（对 `81f43b5`）的变更：`About` 里那堆更新字段被抽成了独立的 `UpdateInfo`
 （`About` 现在是 `extends UpdateInfo` 再加一个 `version`），另外多了一个 `WebUI`
 （`owner` / `repo` / `version` / `filename`）—— 正是 `webui.json` 的形状。
 所以 `webuiGetUpdate()` 的返回类型从 `About` 改成了 `UpdateInfo`，
 `shared/github.ts` 里那个 `WebuiMeta` 也不再手写字段，直接 `Required<WebUI>`。
 
 端点数用 `shared/tools/extract-api.mjs` 同样核过：72 个 / 23 个 controller，
-和源码里声明的路径一一对上，`/api/webui/*` 那四个都在。
-这一轮多出来的两个是 `/api/uploadAndRead` 和 `/api/uploadAndReadToBase64`：
+和源码里声明的路径一一对上，`/api/webui/*` 那四个都在。3.2.28 一个端点都没动。
+3.2.27 那轮多出来的两个是 `/api/uploadAndRead` 和 `/api/uploadAndReadToBase64`：
 3.2.18 把 `/api/upload?type=getBase64` 那个开关拆成了独立端点。
 我们两个都封装了但都不调用 —— 把本地文件读成文本或 base64 浏览器自己就行，
 走一趟后端只是多一次往返，还多一个「后端得够新」的前提。
