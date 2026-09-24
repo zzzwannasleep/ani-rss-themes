@@ -75,8 +75,8 @@ const cover = (a: Ani) => (a.cover ? toApiFile(a.cover) : '')
 
           <div class="wall">
             <v-card v-for="(a, i) in w.items" :key="a.id" :class="{'is-off': !a.enable, 'is-touch': isTouch}"
-                    :style="{'--i': i}" class="mp-card ani-in" rounded="lg"
-                    @click="s.selectMode.value ? s.on.toggle(a) : s.on.edit(a)">
+                    :style="{'--i': i}" class="mp-card ani-in cover-hit" rounded="lg"
+                    @click="s.on.coverClick(a)">
               <v-img :alt="a.title" :src="cover(a)" aspect-ratio="0.667" cover>
                 <template #placeholder>
                   <div class="d-flex align-center justify-center fill-height bg-surface-variant">

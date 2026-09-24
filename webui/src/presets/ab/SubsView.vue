@@ -80,7 +80,7 @@ const dot = (a: Ani) => (!a.enable ? 'rgb(var(--v-theme-secondary))' : a.ova ? '
           <div class="wall">
             <div v-for="(a, i) in w.items" :key="a.id" :class="{'is-off': !a.enable, 'is-touch': isTouch}"
                  :style="{'--i': i}" class="ab-card ani-in" @click="s.selectMode.value && s.on.toggle(a)">
-              <div class="art">
+              <div class="art cover-hit" @click.stop="s.on.coverClick(a)">
                 <v-img :alt="a.title" :src="cover(a)" aspect-ratio="0.714" cover>
                   <template #placeholder>
                     <div class="d-flex align-center justify-center fill-height bg-surface-variant">

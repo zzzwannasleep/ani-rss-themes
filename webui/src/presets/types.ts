@@ -17,4 +17,16 @@ export interface PresetMeta {
      * 只有把「一行一条、点表头排序」当主视图的界面才需要改这一项。
      */
     defaultView?: 'grid' | 'list'
+    /**
+     * 订阅页点封面默认做什么（用户在页面设置里改过之后按用户的来）。
+     * 缺省跟上游一样是 'cover'（换封面）；原本就把「点封面」当「打开」用的界面
+     * （Finder 的图标、MoviePilot 的海报）给 'edit'，升级之后手感不变。
+     */
+    coverClick?: CoverClickAction
+    /** 订阅页压根没有封面（github 那款是纯文字清单）：页面设置里不出「点击封面」这一项 */
+    covers?: false
 }
+
+/** 点封面的三种动作，取值与上游 cover-click-action 一致 */
+export type CoverClickAction = 'edit' | 'playlist' | 'cover'
+export const COVER_CLICK_ACTIONS: readonly CoverClickAction[] = ['edit', 'playlist', 'cover']

@@ -31,6 +31,13 @@ const startupItems = [
   {value: '/logs', title: '日志'},
 ]
 
+/* 选项文字与上游一致；多选模式下点封面仍是选中 / 取消，不走这里 */
+const COVER_ITEMS = [
+  {value: 'edit', title: '编辑订阅'},
+  {value: 'playlist', title: '视频列表'},
+  {value: 'cover', title: '编辑封面'},
+]
+
 /* 明暗三档。列成数组是为了下面三颗按钮长一个样 —— 手写三遍迟早写歪一颗 */
 const MODES = [
   {value: 'light', label: '浅色', icon: 'mdi-weather-sunny'},
@@ -165,6 +172,13 @@ const serverFields: FieldDef[] = [
     <div class="text-body-2 mb-2">启动页</div>
     <v-select v-model="prefs.startupPage" :items="startupItems" class="mb-4"
               hide-details item-title="title" item-value="value"/>
+
+    <!-- 上游 3.2.29 的「点击封面」。github 那款订阅页没有封面，不出这一项 -->
+    <template v-if="meta.covers !== false">
+      <div class="text-body-2 mb-2">点击封面</div>
+      <v-select v-model="prefs.coverClickAction" :items="COVER_ITEMS" class="mb-4"
+                hide-details item-title="title" item-value="value"/>
+    </template>
 
     <div class="d-flex align-center py-1 mb-4">
       <div class="flex-grow-1 pr-4">

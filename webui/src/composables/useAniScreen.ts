@@ -75,6 +75,15 @@ export function useAniScreen() {
         preview: (a: Ani) => (previewOf.value = a),
         del: (a: Ani) => (deleting.value = [a]),
         toggle: (a: Ani) => a.id && ani.toggleSelect(a.id),
+        /**
+         * 点封面：多选模式下照旧是选中 / 取消，否则按页面设置里的「点击封面」走
+         * （编辑订阅 / 视频列表 / 换封面）。十一款的封面长在不同地方，
+         * 但点下去都调这一个，行为就只在这里定义一次。
+         */
+        coverClick: (a: Ani): void => {
+            if (selectMode.value) on.toggle(a)
+            else on[prefs.coverClickAction](a)
+        },
     }
 
     return {

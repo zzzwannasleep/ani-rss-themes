@@ -85,7 +85,7 @@ const picked = (a: Ani) => !!a.id && s.ani.selected.has(a.id)
         <div class="grid">
           <div v-for="a in w.items" :key="a.id" :class="{picked: picked(a), off: !a.enable}" class="ic">
             <!-- 封面就是「文件图标」：方角、1px 黑边、没有阴影 -->
-            <div class="ic-img" @click="s.selectMode.value ? s.on.toggle(a) : s.on.edit(a)">
+            <div class="ic-img cover-hit" @click="s.on.coverClick(a)">
               <v-img :src="cover(a.cover)" aspect-ratio="0.7" cover>
                 <template #placeholder>
                   <div class="fill-height d-flex align-center justify-center">

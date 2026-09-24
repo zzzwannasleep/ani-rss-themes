@@ -1,6 +1,7 @@
 import {defineStore} from 'pinia'
 import {ref, watch} from 'vue'
 import meta from '@preset/meta'
+import {COVER_CLICK_ACTIONS, type CoverClickAction} from '@/presets/types'
 
 /**
  * 外观与页面偏好。
@@ -97,6 +98,18 @@ export const usePrefsStore = defineStore('prefs', () => {
     const sidebarCollapsed = persisted<boolean>('ani-webui-sidebar-collapsed', false)
 
     /**
+     * 订阅页点封面做什么（上游 3.2.29 加的，键同样沿用它的 `cover-click-action`，
+     * 在自带界面上选过的切过来还在）。
+     *
+     * 默认值跟着预设走（PresetMeta.coverClick），和皮肤、视图一个道理。
+     * 不过上游用的是 vueuse 的 useLocalStorage，读一次就把它的默认值 'cover' 写回去了 ——
+     * 打开过自带界面的浏览器里这个键必定有值，那就按那个值来，两边一致。
+     * 认不出来的值（手改的、以后上游加的）退回默认，和上游 handleCoverClick 的处理一样。
+     */
+    const coverClickAction = persisted<CoverClickAction>('cover-click-action', meta.coverClick ?? 'cover')
+    if (!COVER_CLICK_ACTIONS.includes(coverClickAction.value)) coverClickAction.value = meta.coverClick ?? 'cover'
+
+    /**
      * 壁纸的模糊（px）和浅色下那层白纱（0~1），只对带壁纸的皮肤生效（ThemeDef.wallpaper）。
      *
      * 原来浅色是「壁纸原样露出来、一层都不铺」，追番卡片和花花绿绿的图搅在一起，
@@ -109,6 +122,6 @@ export const usePrefsStore = defineStore('prefs', () => {
     return {
         mode, resolved, accent, themeId, loadCustomAssets,
         showScore, showWeek, showPlaylist, showLastDownloadTime, maxContentWidth, startupPage,
-        cardSize, viewMode, sidebarCollapsed, wallpaperBlur, wallpaperVeil,
+        cardSize, viewMode, sidebarCollapsed, wallpaperBlur, wallpaperVeil, coverClickAction,
     }
 })

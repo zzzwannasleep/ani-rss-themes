@@ -11,6 +11,8 @@ const meta: PresetMeta = {
     /* Finder 的默认视图是图标视图，这一款的订阅页就是它：一格一张封面，
        名字压在下面的名牌上，选中整块反白 */
     defaultView: 'grid',
+    /* 在 Finder 里点图标就是「打开」。这一款原来点封面就进编辑，默认值保住这个手感 */
+    coverClick: 'edit',
 }
 
 export default meta

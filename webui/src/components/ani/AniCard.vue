@@ -76,7 +76,8 @@ function onCardClick() {
       @click="onCardClick"
   >
     <div class="poster-wrap">
-      <v-img :alt="item.title" :src="coverUrl" aspect-ratio="0.7" class="poster" cover>
+      <v-img :alt="item.title" :src="coverUrl" aspect-ratio="0.7" class="poster cover-hit" cover
+             @click.stop="s.on.coverClick(item)">
         <template #placeholder>
           <div class="d-flex align-center justify-center fill-height bg-surface-variant">
             <v-icon class="text-medium-emphasis" size="32">mdi-image-outline</v-icon>

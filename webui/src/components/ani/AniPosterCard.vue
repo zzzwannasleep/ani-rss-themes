@@ -55,8 +55,9 @@ function openBgm() {
 </script>
 
 <template>
-  <div :class="{'is-selected': selected, 'is-off': !item.enable}" class="poster-card ani-lift"
-       @click="selectMode && s.on.toggle(item)">
+  <!-- 整张卡就是封面，点哪都算点封面（标题、按钮各自 stop 掉了）；多选模式下 coverClick 自己转成勾选 -->
+  <div :class="{'is-selected': selected, 'is-off': !item.enable}" class="poster-card ani-lift cover-hit"
+       @click="s.on.coverClick(item)">
     <v-img :alt="item.title" :src="coverUrl" aspect-ratio="0.7" class="art" cover>
       <template #placeholder>
         <div class="d-flex align-center justify-center fill-height bg-surface-variant">

@@ -111,7 +111,7 @@ const alt = (a: Ani) => [a.themoviedbName, a.jpTitle].find(v => v && v !== a.tit
             <v-checkbox v-if="s.selectMode.value" :model-value="!!a.id && s.ani.selected.has(a.id)"
                         class="flex-grow-0" density="compact" hide-details @click.stop="s.on.toggle(a)"/>
 
-            <div class="post-thumb">
+            <div class="post-thumb cover-hit" @click.stop="s.on.coverClick(a)">
               <v-img :src="cover(a.cover)" aspect-ratio="0.7" cover>
                 <template #placeholder>
                   <div class="fill-height d-flex align-center justify-center bg-surface-variant">

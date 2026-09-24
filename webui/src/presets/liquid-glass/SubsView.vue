@@ -74,7 +74,8 @@ const cover = (a: Ani) => (a.cover ? toApiFile(a.cover) : '')
                      @click="s.selectMode.value && s.on.toggle(a)">
               <!-- 必须给 aspect-ratio：v-img 在 flex 行里没有固有高度，只给 width 会塌成 0 高
                    （表现是海报那一栏整块空白，不报错） -->
-              <v-img :src="cover(a)" aspect-ratio="0.7" class="poster" cover width="104">
+              <v-img :src="cover(a)" aspect-ratio="0.7" class="poster cover-hit" cover width="104"
+                     @click.stop="s.on.coverClick(a)">
                 <template #placeholder>
                   <div class="d-flex align-center justify-center fill-height bg-surface-variant">
                     <v-icon icon="mdi-image-outline"/>

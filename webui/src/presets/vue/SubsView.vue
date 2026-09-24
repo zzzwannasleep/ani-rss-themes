@@ -100,7 +100,8 @@ function openBgm(a: Ani) {
             <v-checkbox v-if="s.selectMode.value" :model-value="!!a.id && s.ani.selected.has(a.id)"
                         class="flex-grow-0" density="compact" hide-details @click.stop="s.on.toggle(a)"/>
 
-            <v-img :src="cover(a)" aspect-ratio="0.7" class="thumb" cover width="40"/>
+            <v-img :src="cover(a)" aspect-ratio="0.7" class="thumb cover-hit" cover width="40"
+                   @click.stop="s.on.coverClick(a)"/>
 
             <div class="min0">
               <div class="title" @click.stop="openBgm(a)">{{ a.title }}</div>

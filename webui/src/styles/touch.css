@@ -169,3 +169,12 @@
 html {
     -webkit-tap-highlight-color: transparent;
 }
+
+/*
+ * 封面可点（页面设置 →「点击封面」，见 useAniScreen 的 coverClick）。
+ * 十一款的封面长在不同的元素上，统一挂这个类，指针形状只在这里给一次 ——
+ * 不给的话鼠标移上去是箭头，没人知道封面能点。
+ */
+.cover-hit {
+    cursor: pointer;
+}
