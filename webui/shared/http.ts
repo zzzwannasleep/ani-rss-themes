@@ -161,11 +161,21 @@ let skewWarned = false
  * 给「这个后端有没有这个端点」这类探测用 —— 老版本 ani-rss 没有 /api/webui/*，
  * 回的是 {code: 404, message: "404 Not Found !"}，照常走全局提示就是
  * 每次打开关于页弹一句「404 Not Found !」，而这只是探测的正常结果。
+ *
+ * 'notFound'：只有 404 不提示，别的错误照弹。给改过名的端点先试新名字用（见 firstFound）——
+ * 新端点真出错（导入包格式不对之类）得让人看见，不能跟着「没有这个端点」一起咽掉。
  */
-async function request<T>(path: string, method: string, body?: unknown, quiet = false): Promise<T> {
-    const headers: Record<string, string> = {}
+type Quiet = boolean | 'notFound'
+
+const silenced = (quiet: Quiet, code: number) => quiet === true || (quiet === 'notFound' && code === 404)
+
+function authHeaders(): Record<string, string> {
     const token = getToken()
-    if (token) headers['Authorization'] = token
+    return token ? {Authorization: token} : {}
+}
+
+async function request<T>(path: string, method: string, body?: unknown, quiet: Quiet = false): Promise<T> {
+    const headers = authHeaders()
     /* FormData 的 Content-Type 必须让浏览器自己写：multipart 要带一段 boundary，
        手写成 multipart/form-data 就没有 boundary，后端一个字段都解不出来。
        所以这里只给 JSON 的情况设头，FormData 原样递给 fetch。 */
@@ -177,7 +187,11 @@ async function request<T>(path: string, method: string, body?: unknown, quiet = 
         headers,
         body: body === undefined ? null : isForm ? body : JSON.stringify(body),
     })
+    return unwrap<T>(res, quiet)
+}
 
+/** 按 Result 信封解一个响应：成功回 data，失败弹提示（除非 quiet）并抛 ApiError */
+async function unwrap<T>(res: Response, quiet: Quiet): Promise<T> {
     // 后端正常情况下 HTTP 恒 200、错误码在包里；但静态资源 404 之类会走到这
     let json: Result<T>
     try {
@@ -217,8 +231,57 @@ async function request<T>(path: string, method: string, body?: unknown, quiet = 
         setToken('')
         onUnauthorized?.()
     }
-    if (!quiet) onError?.(message)
+    if (!silenced(quiet, code)) onError?.(message)
     throw new ApiError(code, message)
+}
+
+/**
+ * 端点改过名：依次试 paths，前面的回 404（「没有这个端点」）才试下一个。
+ *
+ * 备用界面是丢进任意版本的 config/webui/ 里跑的，挑不了后端；
+ * 认的是端点在不在，不是版本号（同一个版本号上游重推过）。
+ * 新名字放前面：新后端一次就中，老后端多一跳 404，代价只落在老版本上。
+ */
+async function firstFound<T>(paths: string[], attempt: (path: string, quiet: Quiet) => Promise<T>): Promise<T> {
+    for (let i = 0; ; i++) {
+        const last = i === paths.length - 1
+        try {
+            return await attempt(paths[i], last ? false : 'notFound')
+        } catch (e) {
+            if (last || !(e instanceof ApiError) || e.code !== 404) throw e
+        }
+    }
+}
+
+/**
+ * 取一个「回文件」的端点（导出备份这类）。
+ *
+ * 成功时后端直接写字节流、不套信封；失败时（令牌过期、没有这个端点）回的却是普通的
+ * Result JSON。所以按 Content-Type 分流：JSON 当信封走 unwrap，其余当文件。
+ *
+ * 原来导出是一个 <a href="...?s=令牌">：令牌进了浏览器历史和反代日志，
+ * 出错时新标签页里摊开一段 JSON，而老后端没有新端点时根本没法先探一下再退回。
+ * 走 fetch 之后令牌回到请求头，错误走全局提示，也就能在 404 时换老名字。
+ */
+async function fetchFile(path: string, quiet: Quiet): Promise<{blob: Blob, filename: string}> {
+    const res = await fetch(toApiUrl(path), {headers: authHeaders()})
+    if ((res.headers.get('Content-Type') || '').includes('json')) {
+        await unwrap(res, quiet)
+        // 信封说成功却没给文件：不是这类端点该有的回应，别存一个空文件下来
+        const message = '服务端没有返回文件'
+        if (!quiet) onError?.(message)
+        throw new ApiError(res.status, message)
+    }
+    if (!res.ok) {
+        // 反代的 HTML 错误页之类。404 同样算「没有这个端点」，让 firstFound 去试老名字
+        const message = `下载失败（HTTP ${res.status}）`
+        if (!silenced(quiet, res.status)) onError?.(message)
+        throw new ApiError(res.status, message)
+    }
+    // 后端给的是 `inline; filename="ani-rss.backup.3.2.37.zip"`，带版本号，照它的存
+    const cd = res.headers.get('Content-Disposition') || ''
+    const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd)
+    return {blob: await res.blob(), filename: m ? decodeURIComponent(m[1]) : path.split('/').pop() || 'download'}
 }
 
 export const http = {
@@ -228,4 +291,9 @@ export const http = {
     del: <T>(path: string, body?: unknown) => request<T>(path, 'DELETE', body),
     /** 静默 POST：出错不弹提示，调用方自己兜（见 request 的 quiet） */
     postQuiet: <T>(path: string, body?: unknown) => request<T>(path, 'POST', body, true),
+    /** 改过名的 POST 端点，paths 新名字在前（见 firstFound） */
+    postRenamed: <T>(paths: string[], body?: unknown) =>
+        firstFound(paths, (p, quiet) => request<T>(p, 'POST', body, quiet)),
+    /** 改过名的文件端点，同上 */
+    fileRenamed: (paths: string[]) => firstFound(paths, fetchFile),
 }

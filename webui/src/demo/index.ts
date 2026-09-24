@@ -168,6 +168,14 @@ export function installDemo(): void {
                     subgroup: dto.subgroup || base.subgroup,
                 })
             }
+            // 导出拿的是文件不是信封：回一个信封的话界面会报「服务端没有返回文件」，看着像坏了
+            case 'api/exportBackup':
+                return new Response(new Blob(['演示模式：这不是真的备份']), {
+                    headers: {
+                        'Content-Type': 'application/zip',
+                        'Content-Disposition': 'inline; filename="ani-rss.backup.demo.zip"',
+                    },
+                })
             case 'api/custom.css':
             case 'api/custom.js':
                 return new Response('', {headers: {'Content-Type': 'text/plain'}})

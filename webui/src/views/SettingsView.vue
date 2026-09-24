@@ -6,7 +6,7 @@ import {useRoute, useRouter} from 'vue-router'
 import * as api from '@shared/api'
 import {useConfigStore} from '@/stores/config'
 import {useUiStore} from '@/stores/ui'
-import {BASIC_SECTIONS, DOWNLOAD_SECTIONS, EXCLUDE_SECTION, LOGIN_SECTIONS, PROXY_SECTION} from '@/components/settings/schema'
+import {BACKUP_SECTION, BASIC_SECTIONS, DOWNLOAD_SECTIONS, EXCLUDE_SECTION, LOGIN_SECTIONS, PROXY_SECTION} from '@/components/settings/schema'
 import SettingSection from '@/components/settings/SettingSection.vue'
 import PageSettings from '@/components/settings/PageSettings.vue'
 import NotificationSettings from '@/components/settings/NotificationSettings.vue'
@@ -24,8 +24,9 @@ const TABS = [
   {value: 'download', label: '下载设置'},
   {value: 'basic', label: '基本设置'},
   {value: 'exclude', label: '全局排除'},
-  {value: 'proxy', label: '代理设置'},
-  {value: 'login', label: '登录设置'},
+  {value: 'proxy', label: '代理'},
+  // 上游 3.2.36（046975d）改叫「安全」。value 不动：地址 #/settings/login 可能已经被人存成书签
+  {value: 'login', label: '安全'},
   {value: 'notification', label: '通知'},
   {value: 'afdian', label: '捐赠'},
   {value: 'about', label: '关于'},
@@ -136,6 +137,8 @@ async function testIpWhitelist() {
 
             <v-expansion-panel title="备份">
               <template #text>
+                <SettingSection :config="config" :section="BACKUP_SECTION" class="mb-4"/>
+                <v-divider class="mb-4"/>
                 <BackupSettings/>
               </template>
             </v-expansion-panel>

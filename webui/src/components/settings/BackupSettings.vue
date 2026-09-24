@@ -16,7 +16,7 @@ const confirming = ref(false)
 /**
  * 导入前先拦一道。
  *
- * 后端的 importConfig 是整包覆盖：设置、订阅、下载记录全换成压缩包里那份，
+ * 后端的导入是整包覆盖：设置、订阅、下载记录全换成压缩包里那份，
  * 覆盖掉的东西没有任何回退路径（除非用户自己先导出过一份）。
  * 按钮就挨着「导出设置」，手滑点错的代价和点对的代价差得太远。
  */
@@ -30,11 +30,30 @@ async function doImport() {
   if (!f) return
   busy.value = 'import'
   try {
-    await api.importConfig(f)
+    await api.importBackup(f)
     confirming.value = false
     ui.success('导入完成，正在重新读取配置')
     await store.load(true)
     file.value = null
+  } finally {
+    busy.value = ''
+  }
+}
+
+/**
+ * 导出走 fetch 拿到 zip 再存盘，不再是 <a href="...?s=令牌">：
+ * 要在新后端（exportBackup）和老后端（exportConfig）之间自己挑端点，链接做不到先探再退。
+ */
+async function doExport() {
+  busy.value = 'export'
+  try {
+    const {blob, filename} = await api.exportBackup()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = filename
+    a.click()
+    // 同步 revoke 的话部分浏览器还没开始读就被收走了，存出来是 0 字节
+    setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
   } finally {
     busy.value = ''
   }
@@ -58,8 +77,7 @@ async function doClearCache() {
     </div>
 
     <div class="d-flex flex-wrap ga-2 mb-4">
-      <!-- 导出走浏览器直接下载，令牌在查询串里（这类请求设不了请求头） -->
-      <v-btn :href="api.exportConfigUrl()" prepend-icon="mdi-upload" target="_blank" variant="tonal">
+      <v-btn :loading="busy === 'export'" prepend-icon="mdi-upload" variant="tonal" @click="doExport">
         导出设置
       </v-btn>
       <v-btn :loading="busy === 'cache'" prepend-icon="mdi-broom" variant="tonal" @click="doClearCache">

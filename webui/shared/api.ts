@@ -32,7 +32,7 @@ function q(path: string, params: Record<string, unknown>): string {
 
 /**
  * 单文件的 multipart 请求体。字段名固定是 file —— 后端三个上传端点
- * （importConfig / upload / webui/upload）都写死了 @RequestParam("file")。
+ * （importBackup / upload / webui/upload）都写死了 @RequestParam("file")。
  *
  * 这几个上传原来各自手写 fetch，绕开了接口层：出错既不弹提示、403 也不会跳登录，
  * 传错文件时页面上一点反应都没有。现在统一走 http.post，FormData 由 request 识别。
@@ -281,9 +281,6 @@ export const verifyNo = (outTradeNo: string) => http.post<void>('api/verifyNo', 
 /* 这几个不走 fetch：要么是让浏览器自己下载文件，要么是给外部系统抄的地址。
    设不了请求头，所以令牌只能进查询串 —— 上游同样如此。 */
 
-/** 导出配置的下载地址（<a href> 用） */
-export const exportConfigUrl = () => toApiUrl('api/exportConfig', {s: getToken()})
-
 /** 下载日志的地址 */
 export const downloadLogsUrl = () => toApiUrl('api/downloadLogs', {s: getToken()})
 
@@ -295,8 +292,21 @@ export const embyWebHookUrl = (apiKey: string) => toApiUrl('api/embyWebHook', {'
 
 /* ==================== 补充端点 ==================== */
 
-/** 导入配置：multipart 上传，不能用 JSON 那套 */
-export const importConfig = (file: File) => http.post<void>('api/importConfig', filePart(file))
+/*
+ * 导出 / 导入备份。
+ *
+ * 上游 3.2.37（53dfa23）把这两个端点从 ConfigController 挪进新的 BackupController，
+ * 顺手改了名：exportConfig → exportBackup、importConfig → importBackup，老名字直接删了、
+ * 没留别名。只认一边的话，另一边的后端上按钮照点，回来的是一句「404 Not Found !」。
+ * 所以两个名字都带上，新的在前（见 http.ts 的 firstFound）。
+ */
+
+/** 导出备份：回 zip 本体和后端给的文件名（带版本号），由界面存盘 */
+export const exportBackup = () => http.fileRenamed(['api/exportBackup', 'api/exportConfig'])
+
+/** 导入备份：multipart 上传，不能用 JSON 那套。会整包覆盖设置、订阅和下载记录 */
+export const importBackup = (file: File) =>
+    http.postRenamed<void>(['api/importBackup', 'api/importConfig'], filePart(file))
 
 /** Bangumi 授权回调：把 OAuth 返回的 code 交给后端换 token */
 export const bgmOauthCallback = (code: string) => http.post<void>(q('api/bgm/oauth/callback', {code}))

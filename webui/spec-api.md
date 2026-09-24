@@ -3,7 +3,7 @@
 - 全局前缀 `/api`：WebMvcConfig 用 addPathPrefix 给所有 @RestController 统一加上
 - 响应恒为 `Result<T> = {code, message, data, t}`，code 是业务码（非 HTTP 状态码），200~299 成功
 - 「鉴权」列 ✓ = 方法上有 @Auth，需要 `Authorization: <token>` 头（无 Bearer 前缀）
-- 共 **72** 个端点 / 23 个 controller
+- 共 **72** 个端点 / 24 个 controller
 - 免鉴权：`/api/testIpWhitelist`、`/api/custom.css`、`/api/custom.js`、`/api/ping`、`/api/login`
 
 
@@ -54,6 +54,13 @@
 | POST | `/api/animeGardenGroup` | ✓ | `Result<List<AnimeGarden.Group>>` | `@RequestParam("bgmId"` | AnimeGarden 番剧字幕组列表 |
 | POST | `/api/animeGardenList` | ✓ | `Result<List<AnimeGarden.Week>>` | `HttpServletRequest request` | AnimeGarden 番剧列表 |
 
+## BackupController
+
+| 方法 | 路径 | 鉴权 | 返回 | 入参 | 说明 |
+|---|---|---|---|---|---|
+| GET | `/api/exportBackup` | ✓ | `void` | `无` | 导出备份 |
+| POST | `/api/importBackup` | ✓ | `Result<Void>` | `@RequestParam("file"` | 导入备份 |
+
 ## BgmController
 
 | 方法 | 路径 | 鉴权 | 返回 | 入参 | 说明 |
@@ -83,8 +90,6 @@
 | GET | `/api/custom.css` | — | `void` | `无` | 自定义CSS |
 | GET | `/api/custom.js` | — | `void` | `无` | 自定义JS |
 | POST | `/api/downloadLoginTest` | ✓ | `Result<Void>` | `@RequestBody Config config` | 下载器测试 |
-| GET | `/api/exportConfig` | ✓ | `void` | `无` | 导出设置 |
-| POST | `/api/importConfig` | ✓ | `Result<Void>` | `@RequestParam("file"` | 导入设置 |
 | ANY | `/api/ping` | — | `Result<Void>` | `无` | 存活测试 |
 | POST | `/api/setConfig` | ✓ | `Result<Void>` | `@RequestBody Config newConfig` | 修改设置 |
 | POST | `/api/testProxy` | ✓ | `Result<ProxyTest>` | `@RequestParam("url"` | 代理测试 |

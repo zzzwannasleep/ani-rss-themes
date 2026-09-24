@@ -131,6 +131,79 @@ at('http://ani.local:7789/')
         (e: Error & {code: number}) => e.code === 502)
 }
 
+/* ── 改过名的端点：新名字 404 才退回老名字 ──
+   上游 3.2.37 把 exportConfig / importConfig 改名成 exportBackup / importBackup，老名字删了。
+   备用界面挑不了后端版本，两边都得能用。要拦的是三种静默出错：
+   老后端上只打新名字（404 当报错弹出来）、新名字真报错却又去打老名字（错误被 404 盖掉）、
+   以及试新名字时的 404 也弹了一句提示。 */
+{
+    const errors: string[] = []
+    setErrorHandler(m => void errors.push(m))
+    const env = (code: number, message = '', data: unknown = null) =>
+        new Response(JSON.stringify({code, message, data, t: Date.now()}),
+            {headers: {'Content-Type': 'application/json'}})
+
+    // 老后端：新名字是 404 信封（HTTP 200），老名字成功
+    let hits: string[] = []
+    globalThis.fetch = (async (u: string) => {
+        const p = new URL(u).pathname
+        hits.push(p)
+        return p.endsWith('/importBackup') ? env(404, '404 Not Found !') : env(200, '导入成功')
+    }) as unknown as typeof fetch
+    await http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData())
+    assert.deepEqual(hits, ['/api/importBackup', '/api/importConfig'])
+    assert.deepEqual(errors, [], `试新名字的 404 不该弹提示，却弹了：${errors}`)
+
+    // 新后端：一次就中，不许再去碰老名字
+    hits = []
+    globalThis.fetch = (async (u: string) => (hits.push(new URL(u).pathname), env(200))) as unknown as typeof fetch
+    await http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData())
+    assert.deepEqual(hits, ['/api/importBackup'])
+
+    // 新名字真报错（不是 404）：原样弹、原样抛，不去打老名字
+    hits = []
+    globalThis.fetch = (async (u: string) => (hits.push(new URL(u).pathname), env(500, '导入格式异常'))) as unknown as typeof fetch
+    await assert.rejects(() => http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData()),
+        (e: Error & {code: number}) => e.code === 500)
+    assert.deepEqual(hits, ['/api/importBackup'])
+    assert.deepEqual(errors, ['导入格式异常'])
+
+    // 两个名字都没有：最后那个 404 要照常提示，不能一声不吭
+    errors.length = 0
+    globalThis.fetch = (async () => env(404, '404 Not Found !')) as unknown as typeof fetch
+    await assert.rejects(() => http.postRenamed(['api/a', 'api/b']))
+    assert.deepEqual(errors, ['404 Not Found !'])
+
+    /* 文件端点：成功是字节流（不套信封），失败是信封 */
+    errors.length = 0
+    hits = []
+    let auth: string | undefined
+    ;(globalThis as {localStorage?: unknown}).localStorage = {getItem: () => 'tok', setItem: () => {}, removeItem: () => {}}
+    globalThis.fetch = (async (u: string, init: RequestInit) => {
+        const p = new URL(u).pathname
+        hits.push(p)
+        auth = (init.headers as Record<string, string>).Authorization
+        if (p.endsWith('/exportBackup')) return env(404, '404 Not Found !')
+        return new Response(new Blob(['PK']), {headers: {
+            'Content-Type': 'application/zip',
+            'Content-Disposition': 'inline; filename="ani-rss.backup.3.2.28.zip"',
+        }})
+    }) as unknown as typeof fetch
+    const got = await http.fileRenamed(['api/exportBackup', 'api/exportConfig'])
+    assert.deepEqual(hits, ['/api/exportBackup', '/api/exportConfig'])
+    assert.equal(got.filename, 'ani-rss.backup.3.2.28.zip', '文件名要照后端给的存（带版本号）')
+    assert.equal(await got.blob.text(), 'PK')
+    assert.equal(auth, 'tok', '令牌走请求头，不再进查询串')
+    assert.ok(!hits.some(h => h.includes('s=')))
+    assert.deepEqual(errors, [])
+
+    // 信封说成功却没给文件：当错误，别存一个空文件下来
+    globalThis.fetch = (async () => env(200)) as unknown as typeof fetch
+    await assert.rejects(() => http.fileRenamed(['api/exportBackup']))
+    assert.deepEqual(errors, ['服务端没有返回文件'])
+    ;(globalThis as {localStorage?: unknown}).localStorage = {getItem: () => null, setItem: () => {}, removeItem: () => {}}
+}
+
 /* ── posterUrl：Mikan 那层「裁成正方形」的缩放参数必须摘掉 ──
    Mikan 列表里发的是 ?width=400&height=400，它的图床按这个框中心裁一刀；
    原图是 850×1200 的竖版海报，裁完再被我们 3:4 的封面框裁第二刀，剩不下半张。
@@ -156,4 +229,5 @@ console.log('✓ toApiUrl 全部断言通过')
 console.log('✓ postQuiet 静默行为断言通过')
 console.log('✓ FormData 请求体断言通过')
 console.log('✓ 缺 code 的成功包断言通过')
+console.log('✓ 改名端点回退断言通过')
 console.log('\u2713 posterUrl 断言通过')

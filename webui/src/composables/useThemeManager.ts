@@ -73,6 +73,23 @@ export function useThemeManager() {
     watch(() => [prefs.themeId, prefs.resolved], sync, {immediate: true})
 
     /*
+     * 壁纸的模糊和白纱（ani-rss-themes#3）。只写 --ani-wp-* 这组自有变量，
+     * 不直接写 --ani-bg-filter —— 内联样式压过一切样式表，写了就把别的皮肤自己的背景滤镜也盖掉了。
+     *
+     * 为 0 的时候写 none，不写 blur(0px)：那个「等于没效果」的值照样让浏览器给这层
+     * 铺满视口的固定层单建合成层（见 base.css 里 body::before 那段），白纱同理整层不渲染。
+     */
+    watchEffect(() => {
+        const s = document.documentElement.style
+        const blur = Math.max(0, Number(prefs.wallpaperBlur) || 0)
+        const veil = Math.min(1, Math.max(0, Number(prefs.wallpaperVeil) || 0))
+        s.setProperty('--ani-wp-blur', `${blur}px`)
+        s.setProperty('--ani-wp-filter', blur ? `blur(${blur}px)` : 'none')
+        s.setProperty('--ani-wp-veil', String(veil))
+        s.setProperty('--ani-wp-veil-display', veil ? 'block' : 'none')
+    })
+
+    /*
      * 手机地址栏、以及装到主屏之后的状态栏，颜色取自 <meta name="theme-color">。
      * index.html 里写死的那条只是首屏兜底 —— 十一款配色差得远，
      * 一个值总有八款对不上，白底的地址栏配 win98 的银灰或者 acg 的深色都很脏。

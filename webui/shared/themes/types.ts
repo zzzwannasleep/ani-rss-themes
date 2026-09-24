@@ -81,4 +81,10 @@ export interface ThemeDef {
     css?: string
     /** 需要联网拉壁纸的主题标记出来，让用户知道会产生外部请求 */
     remote?: boolean
+    /**
+     * 整屏铺壁纸的主题。页面设置里会多出「背景模糊」「浅色白纱」两个滑块，
+     * 数值以 --ani-wp-blur / --ani-wp-filter / --ani-wp-veil 写到 <html> 上，
+     * 主题的 css 自己决定接到哪（见 registry.ts 里 acg 那段）。
+     */
+    wallpaper?: boolean
 }

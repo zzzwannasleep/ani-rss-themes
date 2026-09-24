@@ -107,17 +107,18 @@ export const THEMES: ThemeDef[] = [
          * 两个方向都成立，但「怎么让字站得住」这件事两边的做法不一样。
          *
          * 深色：一层压暗层把整张壁纸按下去，白字压在上面。
-         * 浅色：**背景一层都不铺**，壁纸原样露出来，遮挡交给卡片 ——
-         *   卡片加厚到 .96，正文就串不到壁纸的颜色；
+         * 浅色：遮挡主要交给卡片 —— 卡片加厚到 .96，正文就串不到壁纸的颜色；
          *   直接落在图上的那几个标题（总览的「今天」「下载中」、订阅页的星期）
          *   自己带一圈白光晕，见 presets/acg/preset.css。
-         *   浅色不走「压亮层」那条路是试过的：白纱一铺，壁纸只剩个影子，
-         *   而这一款的主角就是那张图。
+         *   背景上只铺一层**薄**白纱 + 轻模糊，浓淡由页面设置里的滑块定。
+         *   原来这层是一点都不铺的（白纱铺到 .6 以上壁纸只剩个影子），但一点不铺
+         *   卡片又跟图搅在一起、找不出来（ani-rss-themes#3）。默认 .3 + 6px 是两头的折中，
+         *   拉到 0 就回到原图。
          *
          * 细边两边也要翻：深色是白线，浅色要翻成深线。
          * 都在下面的 css 里按 data-ani-mode 分开给。
          */
-        base: 'auto', remote: true,
+        base: 'auto', remote: true, wallpaper: true,
         light: {
             background: '#e9eefb', surface: '#ffffff', 'surface-variant': '#dde5f6',
             primary: '#2657bf', success: '#2f6849', warning: '#795714', error: '#b12424', info: '#525e77',
@@ -143,6 +144,15 @@ export const THEMES: ThemeDef[] = [
 @media (orientation: portrait) {
     :root { --ani-bg-image: url("${ACG_MP}"); }
 }
+
+/*
+ * 背景模糊：页面设置里的滑块（--ani-wp-*，由 useThemeManager 写到 <html> 上）。
+ * 模糊会把图的边缘往里吃掉一圈，四边露出底色；不用 scale 放大去盖 ——
+ * 放大多少得看屏幕多宽，手机上 20px 要放 1.1 倍、宽屏 1.02 就够 ——
+ * 直接把这层往外撑出两倍模糊半径，任何宽度都刚好盖住。
+ */
+:root { --ani-bg-filter: var(--ani-wp-filter, none); }
+body::before { inset: calc(var(--ani-wp-blur, 0px) * -2); }
 .v-card { border: 1px solid rgba(255,255,255,.34); }
 /*
  * 这里原来是「.v-btn:hover { box-shadow: 0 0 16px rgba(127,169,255,.5) }」——
@@ -153,18 +163,21 @@ export const THEMES: ThemeDef[] = [
 .v-btn:hover { border-color: rgba(255,255,255,.5); }
 
 /*
- * 浅色的那一半：**遮罩挪到卡片上，背景一层都不铺**。
+ * 浅色的那一半：**遮罩主要挪到卡片上，背景只铺一层可调的薄纱**。
  *
  * 深色那边靠一层压暗层把整张壁纸按下去，白字才站得住。浅色不走这条路 ——
- * 试过一层白纱，壁纸被洗得只剩个影子，而这一款的主角就是那张图。
- * 改成：背景原样露出来，遮挡这件事由卡片自己负责，卡片一厚，
- * 正文就再也不会被壁纸的颜色串上来。落在图上的那几个标题另有交代，
- * 见 presets/acg/preset.css 里那圈光晕。
+ * 厚白纱会把壁纸洗得只剩个影子，而这一款的主角就是那张图。
+ * 所以正文的可读性由卡片自己负责，卡片一厚，就再也不会被壁纸的颜色串上来；
+ * 背景那层纱只管把图往后推一点，让卡片从图里跳出来（ani-rss-themes#3），
+ * 浓淡交给用户。落在图上的那几个标题另有交代，见 presets/acg/preset.css 里那圈光晕。
  */
 html[data-ani-mode="light"] body::after {
-    /* 压暗层整个不要。不是把颜色设成透明 —— 那样它还是一层铺满视口的固定层，
-       每次滚动都要跟着重新合成一遍，理由同本文件里 body::before 那段 */
-    display: none;
+    /* 压暗层换成一层白纱，浓淡由页面设置的滑块给（--ani-wp-veil）。
+       拉到 0 时整层不渲染（display: none），不是把颜色设成透明 —— 那样它还是一层
+       铺满视口的固定层，每次滚动都要跟着重新合成一遍，理由同本文件里 body::before 那段。
+       颜色取浅色 background 往白里再提一档，纱是冷白的，和卡片的底色一个方向。 */
+    display: var(--ani-wp-veil-display, none);
+    background: rgba(244, 247, 255, var(--ani-wp-veil, 0));
 }
 
 html[data-ani-mode="light"] {

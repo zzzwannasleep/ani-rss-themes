@@ -119,6 +119,29 @@ const serverFields: FieldDef[] = [
     </v-alert>
     <div v-else class="mb-4"></div>
 
+    <!--
+      壁纸的模糊和白纱（ani-rss-themes#3）。只有整屏铺壁纸的皮肤才出这两条，
+      别的皮肤背景是渐变或纯色，拉了也看不出变化，只会让人以为坏了。
+      拖动时即时生效，不用保存 —— 和上面的明暗、主题色一样是本机偏好。
+    -->
+    <template v-if="currentTheme?.wallpaper">
+      <div class="d-flex align-center">
+        <div class="text-body-2 wp-label">背景模糊</div>
+        <v-slider v-model="prefs.wallpaperBlur" :max="20" :min="0" :step="1" class="mx-2"
+                  color="primary" hide-details/>
+        <span class="text-caption text-medium-emphasis wp-value">{{ prefs.wallpaperBlur }}px</span>
+      </div>
+      <div class="d-flex align-center">
+        <div class="text-body-2 wp-label">浅色白纱</div>
+        <v-slider v-model="prefs.wallpaperVeil" :max="0.8" :min="0" :step="0.05" class="mx-2"
+                  color="primary" hide-details/>
+        <span class="text-caption text-medium-emphasis wp-value">{{ Math.round(prefs.wallpaperVeil * 100) }}%</span>
+      </div>
+      <div class="text-caption text-medium-emphasis mb-4">
+        把壁纸往后推，让订阅卡片更显眼。都拉到 0 就是原图；白纱只在浅色下有，深色自带压暗层。
+      </div>
+    </template>
+
     <div class="d-flex align-center py-1">
       <div class="flex-grow-1 pr-4 text-body-2">显示评分</div>
       <v-switch v-model="prefs.showScore" color="primary" density="compact" hide-details/>
@@ -168,5 +191,16 @@ const serverFields: FieldDef[] = [
     background: none;
     cursor: pointer;
     padding: 0;
+}
+
+/* 两条滑块的标签和读数各自定宽：滑轨才会上下对齐，数字从 5 跳到 15 时滑轨也不跟着抖 */
+.wp-label {
+    flex: 0 0 5em;
+}
+
+.wp-value {
+    flex: 0 0 3.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 </style>

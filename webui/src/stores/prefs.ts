@@ -96,9 +96,19 @@ export const usePrefsStore = defineStore('prefs', () => {
      */
     const sidebarCollapsed = persisted<boolean>('ani-webui-sidebar-collapsed', false)
 
+    /**
+     * 壁纸的模糊（px）和浅色下那层白纱（0~1），只对带壁纸的皮肤生效（ThemeDef.wallpaper）。
+     *
+     * 原来浅色是「壁纸原样露出来、一层都不铺」，追番卡片和花花绿绿的图搅在一起，
+     * 找卡片得先从图里把它认出来（ani-rss-themes#3）。默认给一档轻的：图还认得出是哪张，
+     * 但已经退到卡片后面去了。各人的屏幕和口味差很多，所以做成滑块，拉到 0 就是原来的样子。
+     */
+    const wallpaperBlur = persisted<number>('ani-webui-wallpaper-blur', 6)
+    const wallpaperVeil = persisted<number>('ani-webui-wallpaper-veil', .3)
+
     return {
         mode, resolved, accent, themeId, loadCustomAssets,
         showScore, showWeek, showPlaylist, showLastDownloadTime, maxContentWidth, startupPage,
-        cardSize, viewMode, sidebarCollapsed,
+        cardSize, viewMode, sidebarCollapsed, wallpaperBlur, wallpaperVeil,
     }
 })

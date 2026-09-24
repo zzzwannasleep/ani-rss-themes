@@ -41,7 +41,15 @@ export interface SectionDef {
     fields: FieldDef[]
 }
 
-const DOWNLOAD_TOOLS = ['qBittorrent', 'Transmission', 'Aria2', 'OpenList'].map(v => ({title: v, value: v}))
+/*
+ * OpenList 上游 3.2.33（f160274）起在后端禁用了，自带界面把它置灰成「已停止支持」。
+ * 这里不置灰只标注：备用界面也跑在 3.2.33 以前的后端上，那边它还能用，
+ * 置灰了已经在用的人连当前值都显示不出来、也改不回去。
+ */
+const DOWNLOAD_TOOLS = [
+    ...['qBittorrent', 'Transmission', 'Aria2'].map(v => ({title: v, value: v})),
+    {title: 'OpenList（3.2.33 起已停止支持）', value: 'OpenList'},
+]
 
 /** OpenList 的离线下载 driver，取自上游 Download.vue 的 offlineList */
 const OPENLIST_PROVIDERS = ['115 Open', '115 Cloud', '123 Open', '123Pan', 'Thunder', 'PikPak']
@@ -295,13 +303,23 @@ export const BASIC_SECTIONS: SectionDef[] = [
             {key: 'autoUpdate', label: '自动更新', type: 'switch'},
             {key: 'autoStart', label: '开机自启', type: 'switch'},
             {key: 'debug', label: 'DEBUG 日志', type: 'switch'},
-            {key: 'configBackup', label: '设置自动备份', type: 'switch'},
-            {key: 'configBackupDay', label: '备份保留天数', type: 'number', min: 1, suffix: '天',
-                disabledWhen: c => !c.configBackup},
             {key: 'apiKey', label: 'API Key', type: 'text', hint: 'ICS 日历与 Emby Webhook 用的就是它'},
         ],
     },
 ]
+
+/**
+ * 自动备份。上游 3.2.37（53dfa23）把这两项从「其他」挪到了备份那块，和导入导出放一起 ——
+ * 找「备份」的人不会去「其他」里翻。字段名没变，新老后端都认。
+ */
+export const BACKUP_SECTION: SectionDef = {
+    title: '自动备份',
+    fields: [
+        {key: 'configBackup', label: '设置自动备份', type: 'switch'},
+        {key: 'configBackupDay', label: '备份保留天数', type: 'number', min: 1, suffix: '天',
+            disabledWhen: c => !c.configBackup},
+    ],
+}
 
 /* ══════════════ 其余标签页 ══════════════ */
 

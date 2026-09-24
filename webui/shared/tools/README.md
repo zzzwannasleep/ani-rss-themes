@@ -36,7 +36,7 @@ node webui/shared/tools/extract-api.mjs upstream
 ```
 
 同样带自校验：抽出的端点必须覆盖源码里声明的每一条 mapping 路径。
-当前结果为 70 个端点 / 23 个 controller。
+当前结果为 72 个端点 / 24 个 controller。
 
 ## preview-fit.mjs
 

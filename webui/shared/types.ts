@@ -350,7 +350,7 @@ export interface BgmMeAvatar {
 
 /** CollectionInfo —— 合集信息 */
 export interface CollectionInfo {
-    /** 种子文件 base64 */
+    /** 种子文件 Base64 或磁力链接 */
     torrent?: string
     /** 订阅 */
     ani?: Ani
