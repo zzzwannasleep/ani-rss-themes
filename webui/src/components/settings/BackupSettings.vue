@@ -4,6 +4,7 @@ import * as api from '@shared/api'
 import {useConfigStore} from '@/stores/config'
 import {useUiStore} from '@/stores/ui'
 import {pickedFile} from '@/composables/pickedFile'
+import {saveBlob} from '@/composables/saveBlob'
 import DangerConfirm from '@/components/common/DangerConfirm.vue'
 
 const store = useConfigStore()
@@ -48,12 +49,7 @@ async function doExport() {
   busy.value = 'export'
   try {
     const {blob, filename} = await api.exportBackup()
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = filename
-    a.click()
-    // 同步 revoke 的话部分浏览器还没开始读就被收走了，存出来是 0 字节
-    setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
+    saveBlob(blob, filename)
   } finally {
     busy.value = ''
   }

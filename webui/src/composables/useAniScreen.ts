@@ -2,6 +2,7 @@ import {computed, onMounted, ref} from 'vue'
 import type {Ani} from '@shared/types'
 import {useAniStore} from '@/stores/ani'
 import {usePrefsStore} from '@/stores/prefs'
+import {saveBlob} from './saveBlob'
 
 /**
  * 订阅页的「非视觉」部分：弹窗开关、多选状态、批量动作。
@@ -57,12 +58,8 @@ export function useAniScreen() {
     function exportSelected() {
         const list = selectedAnis.value
         if (!list.length) return
-        const url = URL.createObjectURL(new Blob([JSON.stringify(list)], {type: 'application/json'}))
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'ani.v2.json'
-        a.click()
-        URL.revokeObjectURL(url)
+        // 原来点完就同步 revoke，部分浏览器存出来是 0 字节（见 saveBlob）
+        saveBlob(new Blob([JSON.stringify(list)], {type: 'application/json'}), 'ani.v2.json')
         exitSelect()
     }
 

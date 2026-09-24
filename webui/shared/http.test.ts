@@ -154,18 +154,34 @@ at('http://ani.local:7789/')
     assert.deepEqual(hits, ['/api/importBackup', '/api/importConfig'])
     assert.deepEqual(errors, [], `试新名字的 404 不该弹提示，却弹了：${errors}`)
 
-    // 新后端：一次就中，不许再去碰老名字
+    // 第二次直接用试出来的老名字：备份几十 MB，不能每次先白传一遍给新名字
+    hits = []
+    await http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData())
+    assert.deepEqual(hits, ['/api/importConfig'])
+
+    // 没刷新页面、后端却升级了：记住的老名字 404，要清掉记忆从头试，而且这一下不弹提示
+    hits = []
+    globalThis.fetch = (async (u: string) => {
+        const p = new URL(u).pathname
+        hits.push(p)
+        return p.endsWith('/importConfig') ? env(404, '404 Not Found !') : env(200)
+    }) as unknown as typeof fetch
+    await http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData())
+    assert.deepEqual(hits, ['/api/importConfig', '/api/importBackup'])
+    assert.deepEqual(errors, [])
+
+    // 新后端：一次就中，不许再去碰老名字（换一组名字，免得吃到上面记住的结果）
     hits = []
     globalThis.fetch = (async (u: string) => (hits.push(new URL(u).pathname), env(200))) as unknown as typeof fetch
-    await http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData())
-    assert.deepEqual(hits, ['/api/importBackup'])
+    await http.postRenamed(['api/newName', 'api/oldName'], new FormData())
+    assert.deepEqual(hits, ['/api/newName'])
 
     // 新名字真报错（不是 404）：原样弹、原样抛，不去打老名字
     hits = []
     globalThis.fetch = (async (u: string) => (hits.push(new URL(u).pathname), env(500, '导入格式异常'))) as unknown as typeof fetch
-    await assert.rejects(() => http.postRenamed(['api/importBackup', 'api/importConfig'], new FormData()),
+    await assert.rejects(() => http.postRenamed(['api/fresh', 'api/legacy'], new FormData()),
         (e: Error & {code: number}) => e.code === 500)
-    assert.deepEqual(hits, ['/api/importBackup'])
+    assert.deepEqual(hits, ['/api/fresh'])
     assert.deepEqual(errors, ['导入格式异常'])
 
     // 两个名字都没有：最后那个 404 要照常提示，不能一声不吭

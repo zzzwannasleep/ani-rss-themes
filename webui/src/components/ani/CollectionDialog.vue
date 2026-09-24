@@ -130,7 +130,9 @@ async function onMagnet() {
   try {
     await guessSubgroup()
   } finally {
-    busy.value = ''
+    /* 失焦就会触发这里 —— 贴完链接直接点「预览」，预览已经把 busy 换成了 'preview'，
+       这边后回来不能把它清掉，不然预览还在跑按钮就不转了 */
+    if (busy.value === 'magnet') busy.value = ''
   }
 }
 

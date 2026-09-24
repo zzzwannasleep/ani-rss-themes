@@ -242,11 +242,29 @@ async function unwrap<T>(res: Response, quiet: Quiet): Promise<T> {
  * 认的是端点在不在，不是版本号（同一个版本号上游重推过）。
  * 新名字放前面：新后端一次就中，老后端多一跳 404，代价只落在老版本上。
  */
+const found = new Map<string, number>()
+
 async function firstFound<T>(paths: string[], attempt: (path: string, quiet: Quiet) => Promise<T>): Promise<T> {
+    /* 试出来哪个名字能用就记住，本页之内直接用它：
+       老后端上导入备份每次都得先把整个 zip 传给新名字吃一个 404、再传第二遍，
+       备份带着封面和种子，几十 MB 白传一遍。
+       记住的那个也 404 了（没刷新页面，后端却升级了）就把记忆清掉、从头再试一轮。 */
+    const key = paths.join('|')
+    const start = found.get(key)
+    if (start) {
+        try {
+            return await attempt(paths[start], 'notFound')
+        } catch (e) {
+            if (!(e instanceof ApiError) || e.code !== 404) throw e
+            found.delete(key)
+        }
+    }
     for (let i = 0; ; i++) {
         const last = i === paths.length - 1
         try {
-            return await attempt(paths[i], last ? false : 'notFound')
+            const r = await attempt(paths[i], last ? false : 'notFound')
+            found.set(key, i)
+            return r
         } catch (e) {
             if (last || !(e instanceof ApiError) || e.code !== 404) throw e
         }
