@@ -1,7 +1,6 @@
 import {readonly, ref} from 'vue'
 import type {Ani} from '@shared/types'
 import type {AniScreen} from '@/composables/useAniScreen'
-import {usePrefsStore} from '@/stores/prefs'
 
 /**
  * 一条订阅能做的事，全站唯一一份。
@@ -30,19 +29,33 @@ export interface AniAction {
  * @param a   这一条订阅
  */
 export function aniActions(s: AniScreen, a: Ani): AniAction[] {
-    const prefs = usePrefsStore()
     const list: AniAction[] = []
 
-    if (prefs.showPlaylist) {
-        list.push({key: 'playlist', title: '视频列表', icon: 'mdi-play-circle-outline', compact: true,
-            run: () => s.on.playlist(a)})
-    }
+    /*
+     * 「列表」不再挂开关。上游 3.2.52 把「显示视频列表」这个偏好整个删了
+     * （`showPlaylist` 从 global.js 里拿掉，AniCoverView 那颗菜单项改成无条件出现）——
+     * 视频列表本来就是订阅上最常点的一项，藏起来之后大多数人再也想不起来它存在。
+     */
     list.push(
+        {key: 'playlist', title: '列表', icon: 'mdi-play-circle-outline', compact: true,
+            run: () => s.on.playlist(a)},
         {key: 'edit', title: '编辑', icon: 'mdi-pencil-outline', compact: true, run: () => s.on.edit(a)},
         {key: 'preview', title: '预览匹配结果', icon: 'mdi-eye-outline', compact: true, run: () => s.on.preview(a)},
         /* 刷新单条：原来只有 GitHub 那款有。RSS 刚更新时不想等下一轮轮询，
            这是最常按的一个，没道理只在一款界面里存在 */
         {key: 'refresh', title: '刷新这一条', icon: 'mdi-refresh', run: () => void s.ani.refreshOne(a)},
+        /*
+         * 刮削 / 强制刮削：上游 3.2.40（62a27b7）把这两项加到了封面菜单上 ——
+         * 以前只能进「编辑订阅 → 其他」里点，为了刮一部番要开一次编辑框。
+         * 放在「更多」菜单里而不是图标行：它俩不是高频动作，挤进图标行会把「编辑」顶出去。
+         */
+        {key: 'scrape', title: '刮削', icon: 'mdi-image-text', run: () => void s.ani.scrapeOne(a, false)},
+        {
+            key: 'scrapeF',
+            title: '强制刮削',
+            icon: 'mdi-image-sync-outline',
+            run: () => void s.ani.scrapeOne(a, true),
+        },
         /* 单条启停：原来只能进多选模式再批量操作，为了停一条番要点四下 */
         {
             key: 'enable',

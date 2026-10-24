@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {AniScreen} from '@/composables/useAniScreen'
 import AniAddDialog from './AniAddDialog.vue'
+import AniBatchDialog from './AniBatchDialog.vue'
 import AniEditDialog from './AniEditDialog.vue'
 import AniDeleteDialog from './AniDeleteDialog.vue'
 import PlayListDialog from './PlayListDialog.vue'
@@ -11,14 +12,16 @@ import ImportAniDialog from './ImportAniDialog.vue'
 import CollectionDialog from './CollectionDialog.vue'
 
 /**
- * 九个弹窗的挂载点。各款界面各自只管「订阅怎么摆」，弹窗都长一样，
+ * 十个弹窗的挂载点。各款界面各自只管「订阅怎么摆」，弹窗都长一样，
  * 挂一行 <AniDialogs :s="s"/> 就全有了。
  */
 const {s} = defineProps<{s: AniScreen}>()
 </script>
 
 <template>
-  <AniAddDialog v-model="s.adding.value"/>
+  <AniAddDialog v-model="s.adding.value" :s="s"/>
+  <!-- 新增订阅的最后一步：所有入口排进这个队列，逐条过目再入库 -->
+  <AniBatchDialog v-model="s.batchOpen.value" :requests="s.batchQueue.value"/>
   <AniEditDialog v-if="s.editing.value" :item="s.editing.value" @close="s.editing.value = null"/>
   <AniDeleteDialog v-if="s.deleting.value" :items="s.deleting.value"
                    @close="s.deleting.value = null; s.exitSelect()"/>

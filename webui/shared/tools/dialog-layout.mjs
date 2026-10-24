@@ -306,6 +306,14 @@ const SCENES = [
         ],
     },
     {
+        /*
+         * 「确认订阅信息」那一层（上游 3.2.48 起所有新增订阅都汇到这里）。
+         *
+         * 它跟别的弹窗不一样：里面嵌着**整个订阅编辑框**（AniEditDialog 的 embedded 模式），
+         * 也就是「弹窗里再摆一个四页标签的表单」。这种套法最容易出的就是
+         * 「里面那层被外面那层的 padding / 圆角 / overflow 啃掉一块」——
+         * 而 v-window 本身就是裁剪容器，所以正好是这一份体检的取景框。
+         */
         name: '确认订阅信息', route: '/subscriptions',
         steps: [
             ['打开添加订阅', `window.__hit(${ADD})`, 900],
@@ -317,6 +325,26 @@ const SCENES = [
             ['切其它', `window.__click('.v-tab', '其它')`, 700, '其它'],
             ['回基本再点预览', `(window.__click('.v-tab', '基本'), 1)`, 700],
             ['点预览', `window.__click('.v-card-actions .v-btn', '预览')`, 2600, '预览'],
+        ],
+    },
+    {
+        /*
+         * 队列里摆着两条时量一次。标签条是横向滚动的，每条上还挂着状态字和关闭键 ——
+         * 一条的时候永远量不出「挤」，两条才看得出那颗 × 有没有被挤出可视区。
+         */
+        name: '确认订阅信息 · 两条队列', route: '/subscriptions',
+        steps: [
+            ['打开添加订阅', `window.__hit(${ADD})`, 900],
+            ['浏览 Mikan 列表', `window.__click('button.browse', 'Mikan')`, 2800],
+            ['展开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 1800],
+            ['勾第一个字幕组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 800],
+            ['版本弹窗点确定', `window.__click('.v-card-actions .v-btn', '确定')`, 800],
+            /* 一次只展开一部：展开第二部时第一部那块已经被 v-if 拿掉了，
+               所以下面取 [0] 拿到的确实是第二部的字幕组 */
+            ['展开第二部番', `(window.__vis('.tile-head')[1].click(), 1)`, 1800],
+            ['勾第二部的第一个组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 800],
+            ['版本弹窗点确定', `window.__click('.v-card-actions .v-btn', '确定')`, 800],
+            ['点下一步', `window.__click('.basket .v-btn', '下一步')`, 2600, '两条队列'],
         ],
     },
     {
@@ -341,7 +369,7 @@ const SCENES = [
             ['手填一条备用 RSS', `window.__hit(['手填一条'])`, 800, ''],
         ],
     },
-    {name: '视频列表', route: '/subscriptions', steps: [['点视频列表', `window.__act('视频列表')`, 2000, '']]},
+    {name: '视频列表', route: '/subscriptions', steps: [['点列表', `window.__act('列表')`, 2000, '']]},
     {name: '预览匹配结果', route: '/subscriptions', steps: [['点预览', `window.__act('预览匹配结果')`, 2600, '']]},
     {name: '更换封面', route: '/subscriptions', steps: [['点更换封面', `window.__act('更换封面')`, 1600, '']]},
     {name: '评分', route: '/subscriptions', steps: [['点评分', `window.__act('评分')`, 1400, '']]},
@@ -410,8 +438,11 @@ const SCENES = [
             ['落地下载设置', `1`, 1200, '下载设置'],
             ['切基本设置', `window.__click('.v-tab', '基本设置')`, 900, '基本设置'],
             ['切全局排除', `window.__click('.v-tab', '全局排除')`, 800, '全局排除'],
-            ['切代理设置', `window.__click('.v-tab', '代理设置')`, 800, '代理设置'],
-            ['切登录设置', `window.__click('.v-tab', '登录设置')`, 900, '登录设置'],
+            /* 这两个标签上游 3.2.36 改过名：代理设置 → 代理、登录设置 → 安全。
+               工具这边一直没跟着改，于是这两页自那时起就没被量过（报的是「入口没走通」，
+               看着像脚本问题，实际是取景框里少了两页）。 */
+            ['切代理', `window.__click('.v-tab', '代理')`, 800, '代理'],
+            ['切安全', `window.__click('.v-tab', '安全')`, 900, '安全'],
             ['切通知', `window.__click('.v-tab', '通知')`, 900, '通知'],
             ['切捐赠', `window.__click('.v-tab', '捐赠')`, 800, '捐赠'],
             ['切关于', `window.__click('.v-tab', '关于')`, 1200, '关于'],

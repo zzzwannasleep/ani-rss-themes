@@ -2,8 +2,9 @@
 import {onMounted, ref} from 'vue'
 import {useDisplay} from 'vuetify'
 import {useRouter} from 'vue-router'
-import type {Ani, PlayItem, PlayItemSubtitles} from '@shared/types'
+import type {Ani} from '@shared/types'
 import * as api from '@shared/api'
+import type {LegacySubtitle, PlayableItem} from '@shared/api'
 import {toApiFile} from '@shared/http'
 import {formatTime} from '@shared/format'
 import ExternalPlayerMenu from '@/components/player/ExternalPlayerMenu.vue'
@@ -15,7 +16,7 @@ const {mobile} = useDisplay()
 const router = useRouter()
 const dialog = ref(true)
 const loading = ref(false)
-const items = ref<PlayItem[]>([])
+const items = ref<PlayableItem[]>([])
 
 onMounted(async () => {
   loading.value = true
@@ -26,7 +27,7 @@ onMounted(async () => {
   }
 })
 
-const srcOf = (p: PlayItem) => (p.filename ? toApiFile(p.filename) : '')
+const srcOf = (p: PlayableItem) => (p.filename ? toApiFile(p.filename) : '')
 
 /**
  * 交给播放页。
@@ -37,26 +38,29 @@ const srcOf = (p: PlayItem) => (p.filename ? toApiFile(p.filename) : '')
  * 外挂字幕可能不止一条（同一集常同时放简体和繁体，偶尔还有日字），
  * 播放页一次只收一条，所以有多条时先让人选 —— 原来是闷头取第一条，
  * 想看另一条没有任何入口。mkv 里的内封字幕不走这里，播放器自己从容器里取。
+ *
+ * 3.2.46 起后端不再回这份列表了（见 shared/api.ts 的 LegacySubtitle），
+ * 新后端上这里恒为空，选字幕那一步自然就不出现 —— 不是坏了，是没有数据可列。
  */
-const subs = (p: PlayItem) => (p.subtitles || []).filter(s => s.url)
+const subs = (p: PlayableItem) => (p.subtitles || []).filter(s => s.url)
 
 /** 有简体就默认简体：绝大多数人要的是这条，省一次点击 */
-function preferred(list: PlayItemSubtitles[]) {
+function preferred(list: LegacySubtitle[]) {
   const zh = list.find(s => /(简|chs|sc|zh-?hans)/i.test(`${s.name ?? ''}${s.html ?? ''}`))
   return zh ?? list[0]
 }
 
 /** 丢给本机播放器时带上的字幕：支持 sub 的那几个（Infuse / PotPlayer / VLC）用得到 */
-function subUrl(p: PlayItem) {
+function subUrl(p: PlayableItem) {
   const list = subs(p)
   const s = list.length ? preferred(list) : undefined
   return s?.url ? toApiFile(s.url) : undefined
 }
 
 /** 选字幕的弹窗；null 表示没在选 */
-const choosing = ref<PlayItem | null>(null)
+const choosing = ref<PlayableItem | null>(null)
 
-function play(p: PlayItem, sub?: PlayItemSubtitles) {
+function play(p: PlayableItem, sub?: LegacySubtitle) {
   const list = subs(p)
   if (!sub && list.length > 1) {
     choosing.value = p

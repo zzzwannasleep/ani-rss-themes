@@ -11,8 +11,20 @@ import type {Config} from '@shared/types'
 
 export type FieldType = 'switch' | 'text' | 'password' | 'number' | 'select' | 'textarea' | 'list'
 
+/**
+ * 上游删掉、老后端上还在的字段。
+ *
+ * types.ts 是照**当前**源码生成的，这几个键已经不在 Config 里了；
+ * 但 3.2.44 以前的 OpenList 下载器、3.2.48 以前的「允许替换重名订阅」、
+ * 3.2.52 以前的「复制主 RSS 到备用」都还认它们 —— 备用界面也跑在那些后端上，
+ * 一并删掉的话，还在用的人连当前值都看不见、也改不回去。
+ * 所以键留着，标签上写明是哪个版本删的、被什么取代了。
+ */
+export type LegacyKey = 'provider' | 'openListDownloadRetryNumber' | 'openListDownloadTimeout'
+    | 'replace' | 'copyMasterToStandby'
+
 export interface FieldDef {
-    key: keyof Config & string
+    key: keyof Config & string | LegacyKey
     label: string
     type: FieldType
     hint?: string
@@ -42,16 +54,18 @@ export interface SectionDef {
 }
 
 /*
- * OpenList 上游 3.2.33（f160274）起在后端禁用了，自带界面把它置灰成「已停止支持」。
- * 这里不置灰只标注：备用界面也跑在 3.2.33 以前的后端上，那边它还能用，
+ * OpenList 上游 3.2.33（f160274）起在后端禁用了，自带界面把它置灰成「已停止支持」；
+ * 3.2.44（fdb3afe「彻底移除 OpenList」）连类一起删了 —— OpenList.java / OpenListUtil.java /
+ * MagnetTorrentUtil.java 全没了，`downloadToolType=OpenList` 在新后端上没有任何一条分支。
+ * 这里仍然只标注不置灰：备用界面也跑在 3.2.44 以前的后端上，那边它还能用，
  * 置灰了已经在用的人连当前值都显示不出来、也改不回去。
  */
 const DOWNLOAD_TOOLS = [
     ...['qBittorrent', 'Transmission', 'Aria2'].map(v => ({title: v, value: v})),
-    {title: 'OpenList（3.2.33 起已停止支持）', value: 'OpenList'},
+    {title: 'OpenList（3.2.44 起已移除）', value: 'OpenList'},
 ]
 
-/** OpenList 的离线下载 driver，取自上游 Download.vue 的 offlineList */
+/** OpenList 的离线下载 driver，取自上游 Download.vue 的 offlineList（3.2.44 前） */
 const OPENLIST_PROVIDERS = ['115 Open', '115 Cloud', '123 Open', '123Pan', 'Thunder', 'PikPak']
     .map(v => ({title: v, value: v}))
 
@@ -99,14 +113,16 @@ export const DOWNLOAD_SECTIONS: SectionDef[] = [
             // 同一个字段在不同下载器下叫法不同，上游就是这么处理的，跟着来免得用户对不上
             {key: 'downloadToolPassword', label: 'ApiKey', type: 'password', when: is('qBittorrent')},
             {key: 'downloadToolPassword', label: 'RPC 密钥', type: 'password', when: is('Aria2')},
-            {key: 'provider', label: 'Driver', type: 'select', items: OPENLIST_PROVIDERS, when: is('OpenList')},
+            /* 下面三项是 3.2.44 以前 OpenList 下载器的字段，现在源码里已经没有了（见 LegacyKey） */
+            {key: 'provider', label: 'Driver（OpenList，3.2.44 前）', type: 'select', items: OPENLIST_PROVIDERS,
+                when: is('OpenList')},
             {
-                key: 'openListDownloadRetryNumber', label: '重试次数', type: 'number', min: 0,
+                key: 'openListDownloadRetryNumber', label: '重试次数（OpenList，3.2.44 前）', type: 'number', min: 0,
                 when: is('OpenList'),
             },
             {
-                key: 'openListDownloadTimeout', label: '离线超时', type: 'number', min: 0, suffix: '分钟',
-                when: is('OpenList'),
+                key: 'openListDownloadTimeout', label: '离线超时（OpenList，3.2.44 前）', type: 'number', min: 0,
+                suffix: '分钟', when: is('OpenList'),
             },
         ],
     },
@@ -214,7 +230,12 @@ export const BASIC_SECTIONS: SectionDef[] = [
             {key: 'customEpisodeGroupIndex', label: '捕获组序号', type: 'number', min: 0,
                 disabledWhen: c => !c.customEpisode},
             {key: 'upload', label: '默认开启自动上传', type: 'switch'},
-            {key: 'replace', label: '允许替换重名订阅', type: 'switch'},
+            /*
+             * 3.2.48（9000616）起「重名怎么办」不再是一个全局开关，改成添加那一步撞名才问一次
+             * （见 AniBatchDialog）。键留着：3.2.48 以前的后端只认它。
+             */
+            {key: 'replace', label: '允许替换重名订阅（3.2.48 前）', type: 'switch',
+                hint: '新版本改成在「添加订阅」里撞名时问一次，这一项只在老后端上生效'},
         ],
     },
     {
@@ -263,8 +284,14 @@ export const BASIC_SECTIONS: SectionDef[] = [
             {key: 'procrastinatingMasterOnly', label: '仅主 RSS 参与摸鱼检测', type: 'switch',
                 disabledWhen: c => !c.procrastinating},
             {key: 'standbyRss', label: '备用 RSS', type: 'switch'},
-            {key: 'copyMasterToStandby', label: '添加订阅时复制主 RSS 到备用', type: 'switch',
-                disabledWhen: c => !c.standbyRss},
+            /*
+             * 3.2.52（e34893f）起上游删了这个字段：备用源改成在「浏览番剧列表」里
+             * 勾选多个字幕组时一起提交（RssToAniDTO.standbyRssList），
+             * 不再靠一个全局开关把所有订阅的主源都复制一份。键留着给老后端。
+             */
+            {key: 'copyMasterToStandby', label: '添加订阅时复制主 RSS 到备用（3.2.52 前）', type: 'switch',
+                disabledWhen: c => !c.standbyRss,
+                hint: '新版本改成在番剧列表里勾多个字幕组，一次把主源和备用源都交上去'},
             /* 共存模式是「同一集留多个字幕组的版本」，靠的就是备用源；
                总开关关着的时候上游这一项也是禁用的 */
             {key: 'coexist', label: '多字幕组共存模式', type: 'switch',

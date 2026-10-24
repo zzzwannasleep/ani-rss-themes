@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useDisplay} from 'vuetify'
+import {VDialog} from 'vuetify/components/VDialog'
+import {VCard} from 'vuetify/components/VCard'
 import type {Ani} from '@shared/types'
 import {useAniStore} from '@/stores/ani'
 import {useConfigStore} from '@/stores/config'
@@ -9,6 +11,7 @@ import type {TmdbGroup} from '@shared/api'
 import {useUiStore} from '@/stores/ui'
 import StringListField from '@/components/common/StringListField.vue'
 import SourceBrowserDialog from './SourceBrowserDialog.vue'
+import type {PickedGroup} from './batch'
 import PreviewDialog from './PreviewDialog.vue'
 import DangerConfirm from '@/components/common/DangerConfirm.vue'
 
@@ -16,6 +19,14 @@ const props = defineProps<{
   item: Ani
   /** 新建模式：不直接调接口，把改好的对象交给调用方去 addAni */
   isNew?: boolean
+  /**
+   * 只出表单，不出外层的 v-dialog。
+   *
+   * 「批量添加」那个多标签弹窗要把同一份表单摆在每个标签页里，一层套一层弹窗
+   * 会摞成两块遮罩（上游是把 Ani.vue 和 EditAni.vue 拆成两个文件，
+   * 这边多一个开关就够，不用再加一层纯转发的组件）。
+   */
+  embedded?: boolean
 }>()
 const emit = defineEmits<{close: []; submit: [Ani]}>()
 
@@ -130,6 +141,33 @@ function onPicked(v: {url: string; bgmUrl?: string; subgroup?: string; match: st
 function mergeMatch(sub: string, match: string[]) {
   const kept = (form.value.match ?? []).filter(m => !m.startsWith(`{{${sub}}}:`))
   form.value.match = [...kept, ...match]
+}
+
+/**
+ * 番剧列表里勾了一篮子再点「下一步」。
+ *
+ * 「换主源」这一档：第一个当主 RSS，其余的顺次进备用列表 —— 和「批量添加」
+ * 处理同一部番的多个字幕组是同一个规矩，两条路不该给出两种结果。
+ */
+function onPickedMany(list: PickedGroup[]) {
+  if (!list.length) return
+
+  if (browseTarget.value === 'standby') {
+    for (const g of list) {
+      mergeMatch(g.subgroup, g.match)
+      form.value.standbyRssList = [...(form.value.standbyRssList ?? []), newStandby(g.url, g.subgroup)]
+    }
+    ui.success(`已加 ${list.length} 条备用 RSS`)
+    return
+  }
+
+  const [main, ...rest] = list
+  onPicked({url: main.url, bgmUrl: main.bgmUrl, subgroup: main.subgroup, match: main.match})
+  for (const g of rest) {
+    mergeMatch(g.subgroup, g.match)
+    form.value.standbyRssList = [...(form.value.standbyRssList ?? []), newStandby(g.url, g.subgroup)]
+  }
+  if (rest.length) ui.success(`主 RSS 已换，另外 ${rest.length} 条进了备用列表`)
 }
 
 /* ── 备用 RSS ── */
@@ -302,9 +340,24 @@ async function fillDownloadPath() {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" :fullscreen="mobile" max-width="820" scrollable @after-leave="emit('close')">
-    <v-card>
-      <v-card-title class="d-flex align-center">
+  <!--
+    embedded 时换成一层普通 div：批量添加那个弹窗自己已经是弹窗了，
+    再套一层 v-dialog 就是两块遮罩、两层 Esc 处理，点里面那层的背景会把两层一起关掉。
+
+    VDialog 是**显式 import** 进来的，不能写 `:is="'v-dialog'"`：
+    这套工程走的是 vite-plugin-vuetify 的 autoImport（模板里静态写到的标签才被换成 import），
+    createVuetify 那边一个组件都没全局注册，所以字符串解析不到 —— 结果是
+    渲染出一个空的 <v-dialog> 自定义元素，弹窗永远不开，而且控制台一声不响。
+  -->
+  <component
+      :is="embedded ? 'div' : VDialog"
+      v-bind="embedded ? {} : {modelValue: dialog, fullscreen: mobile, maxWidth: 820, scrollable: true}"
+      :class="embedded ? 'ani-form-embedded' : undefined"
+      @update:model-value="(v: boolean) => (dialog = v)"
+  >
+    <!-- 嵌进批量弹窗时不再套一层 v-card：那是卡里套卡，两层底色两道边（同样要显式 import） -->
+    <component :is="embedded ? 'div' : VCard">
+      <v-card-title v-if="!embedded" class="d-flex align-center">
         <span class="text-truncate">{{ isNew ? '确认订阅信息' : '编辑订阅' }}</span>
         <v-spacer/>
         <v-btn icon="mdi-close" size="small" variant="text" @click="close"/>
@@ -333,7 +386,7 @@ async function fillDownloadPath() {
         min-height 是给宽屏的：三页内容长短不一，不兜个下限的话切标签时弹窗会跳一下。
         全屏时不能要 —— 屏幕矮的手机上 440 撑得整张卡溢出，标题和标签条跟着滚走。
       -->
-      <v-card-text :style="mobile ? undefined : 'min-height: 440px'">
+      <v-card-text :style="mobile ? undefined : `min-height: ${embedded ? 320 : 440}px`">
         <v-tabs-window v-model="tab">
           <!-- ══ 基本 ══ -->
           <v-tabs-window-item value="basic">
@@ -385,7 +438,17 @@ async function fillDownloadPath() {
               </v-col>
 
               <v-col cols="12" md="8">
-                <v-text-field v-model="form.bgmUrl" label="BgmUrl"/>
+                <!--
+                  BgmUrl 旁边那颗「打开」是上游 3.2.39（0939108「增加 BgmUrl 按钮」）加的。
+                  这一栏最容易填错 —— 条目 id 差一位就是另一部番，评分和刮削全跟着错，
+                  而光看一串 https://bgm.tv/subject/12345 是认不出来的，得打开看一眼。
+                -->
+                <v-text-field v-model="form.bgmUrl" label="BgmUrl" placeholder="https://bgm.tv/subject/12345">
+                  <template v-if="form.bgmUrl" #append>
+                    <v-btn :href="form.bgmUrl" icon="mdi-open-in-new" rel="noopener" size="small"
+                           target="_blank" title="在 Bangumi 打开" variant="tonal"/>
+                  </template>
+                </v-text-field>
               </v-col>
               <v-col cols="12" md="4">
                 <!-- 字幕组名是可以改的：RSS 解析猜错时这一栏没法改，卡片上就一直挂着
@@ -625,11 +688,13 @@ async function fillDownloadPath() {
         <!-- 移动文件是不可逆的，放在保存旁边并默认关闭，避免顺手点了 -->
         <v-checkbox v-if="!isNew" v-model="move" density="compact" hide-details label="同时移动已下载的文件"/>
         <v-spacer/>
-        <v-btn variant="text" @click="close">取消</v-btn>
+        <!-- 嵌在批量弹窗里时不摆「取消」：那一条的去留由编辑框上方那颗「跳过这一条」决定，
+             这里再来一颗取消，两颗按钮一颗跳一条、一颗关整个弹窗，分不清 -->
+        <v-btn v-if="!embedded" variant="text" @click="close">取消</v-btn>
         <v-btn :loading="saving" color="primary" variant="flat" @click="save">{{ isNew ? '添加' : '保存' }}</v-btn>
       </v-card-actions>
-    </v-card>
-  </v-dialog>
+    </component>
+  </component>
 
   <DangerConfirm v-model="confirmMove" :loading="saving" ok-text="执意继续移动" @ok="doSave">
     保存的同时会把这条订阅<strong>已下载的整个目录</strong>搬到新路径，搬完不能撤销。
@@ -639,7 +704,8 @@ async function fillDownloadPath() {
   </DangerConfirm>
 
   <!-- 带着这条订阅去番剧站换字幕组：定位到这部番，不用重新搜 -->
-  <SourceBrowserDialog v-model="browsing" :preset="form" :source="browseSource" @pick="onPicked"/>
+  <SourceBrowserDialog v-model="browsing" :preset="form" :source="browseSource"
+                       @pick="onPicked" @pick-many="onPickedMany"/>
 
   <!-- 预览：改完匹配规则先看命中了什么再保存，比存完再回来看少一趟 -->
   <PreviewDialog v-if="previewing" :item="form" defer-save @close="previewing = false"/>
@@ -704,6 +770,15 @@ async function fillDownloadPath() {
 </template>
 
 <style scoped>
+/*
+ * 嵌在队列弹窗里时，这一层是那圈裁剪容器里最外面的一层。
+ * min-width: 0 是给窄屏的：不加的话里面那个四列栅格会按内容算最小宽度，
+ * 把队列弹窗整个撑宽 —— 而弹窗是 overflow 裁掉的，撑出去的部分点不到也滚不到。
+ */
+.ani-form-embedded {
+    min-width: 0;
+}
+
 /* TMDB 名右边那颗外链图标：贴在输入框内侧，不占 append 的位置 */
 .tmdb-link {
     display: inline-flex;

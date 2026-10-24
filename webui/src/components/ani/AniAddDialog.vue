@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useDisplay} from 'vuetify'
-import type {Ani, BgmInfo} from '@shared/types'
+import type {BgmInfo} from '@shared/types'
 import * as api from '@shared/api'
-import {useAniStore} from '@/stores/ani'
 import {useUiStore} from '@/stores/ui'
-import AniEditDialog from './AniEditDialog.vue'
+import type {AniScreen} from '@/composables/useAniScreen'
 import SourceBrowserDialog from './SourceBrowserDialog.vue'
+import {groupPicked, type BatchRequest, type PickedGroup} from './batch'
 
 const model = defineModel<boolean>({required: true})
+const props = defineProps<{s: AniScreen}>()
 
-const ani = useAniStore()
 const ui = useUiStore()
 const {mobile} = useDisplay()
 
 const busy = ref(false)
-/** 解析出来的订阅，先给人过一眼再入库 */
-const pending = ref<Ani | null>(null)
 
 /**
  * 三个番剧源的形式完全一样：填一个 RSS 地址，或者打开番剧列表按星期挑。
@@ -46,26 +44,6 @@ const browseSource = ref<SourceId>('mikan')
 /** 各来源各记各的地址，切标签页时不会被别的来源覆盖掉 */
 const urls = ref<Record<string, string>>({mikan: '', anibt: '', garden: '', other: ''})
 
-/**
- * 从番剧列表挑中的字幕组会连带回填这几项，手填 RSS 时它们是空的。
- *
- * 和 urls 一样按来源分开存，而且记着当时挑的是哪条地址 ——
- * 这三项是「跟着某一条 RSS 地址走的」，不是这个对话框的全局状态。
- * 只存一份的话：在 Mikan 挑了番 A（带着 A 的 Bgm 条目和匹配规则），
- * 退回来切到 AniBT 手填一条番 B 的地址，解析时照样把 A 的 Bgm 和 A 的规则递过去 ——
- * 建出来的订阅指着 B 的 RSS，名字季度集数却是 A 的，规则也永远匹配不上。
- */
-type Picked = {url: string; bgmUrl?: string; subgroup?: string; match: string[]}
-const picked = ref<Record<string, Picked>>({})
-/** 没挑过 / 挑完又手改了地址，都用它 —— 只读，不会被改 */
-const NOTHING: Picked = {url: '', match: []}
-
-/** 这一栏挑回来的附带信息。地址被手改过就不算数了：这三样是跟着那一条 RSS 地址走的 */
-const pickedOf = (id: string): Picked => {
-  const p = picked.value[id]
-  return p && p.url === (urls.value[id] ?? '').trim() ? p : NOTHING
-}
-
 const current = computed(() => SOURCES.find(s => s.id === tab.value))
 
 function openBrowser(id: SourceId) {
@@ -73,20 +51,38 @@ function openBrowser(id: SourceId) {
   browsing.value = true
 }
 
-/** 浏览器里选好字幕组和版本 → 回填表单并直接解析，少让人再点一次 */
-function onPicked(v: {url: string; bgmUrl?: string; subgroup?: string; match: string[]}) {
-  urls.value[browseSource.value] = v.url
-  picked.value[browseSource.value] = {url: v.url, bgmUrl: v.bgmUrl, subgroup: v.subgroup, match: v.match}
-  tab.value = browseSource.value
-  void parse()
+/**
+ * 交给「确认订阅信息」队列。
+ *
+ * 这里**不再自己解析、也不再自己弹编辑框**：解析、过目、入库三步全在队列那个弹窗里，
+ * 手填 RSS / Bangumi 搜索 / 番剧列表三处共用同一套（上游 3.2.48 起也是这么收口的）。
+ * 先把自己这层收掉 —— 队列弹窗是同级的一层遮罩，两层叠着会互相抢 Esc 和背景点击。
+ */
+function handOff(requests: BatchRequest[]) {
+  model.value = false
+  props.s.openBatch(requests)
 }
 
-/* ── 手填 / 回填的 RSS → 订阅对象 ── */
+/** 番剧列表里点「添加」挑回来的一条 */
+function onPicked(v: {url: string; bgmUrl?: string; subgroup?: string; match: string[]}) {
+  handOff([{
+    label: v.subgroup || '订阅',
+    dto: {url: v.url, bgmUrl: v.bgmUrl, subgroup: v.subgroup, enable: true},
+    match: v.match,
+  }])
+}
+
+/** 番剧列表里勾了一篮子再点「下一步」：同一部番的多个字幕组会合成一条（其余进备用） */
+function onPickedMany(list: PickedGroup[]) {
+  handOff(groupPicked(list))
+}
+
+/* ── 手填 / 回填的 RSS ── */
 /* 只留 BgmUrl：RssToAniDTO 根本没有 title 字段，标题是后端从 Bgm 条目上取的，
    再摆一个「番剧名称」输入框只会让人以为填了有用 */
 const otherBgmUrl = ref('')
 
-async function parse() {
+function parse() {
   const isOther = tab.value === 'other'
   const url = (isOther ? urls.value.other : urls.value[tab.value]).trim()
   if (!url) return ui.error('请填写 RSS 地址')
@@ -95,26 +91,18 @@ async function parse() {
     return ui.error('请填写 BgmUrl，或先用搜索选一个 Bangumi 条目')
   }
 
-  const p = isOther ? NOTHING : pickedOf(tab.value)
-
-  busy.value = true
-  try {
-    /* type 必须带上：AniUtil.getAni 里 type 空着就当 mikan 处理，
-       会去 MikanService.getSubgroupId(url) 抠 subgroupId —— AniBT / AnimeGarden 的
-       地址里没这个参数，直接抛「获取失败」。取值是后端那个 switch 认的字面量。 */
-    const a = await api.rssToAni({
+  handOff([{
+    label: '订阅',
+    dto: {
       url,
+      /* type 必须带上：AniUtil.getAni 里 type 空着就当 mikan 处理，
+         会去 MikanService.getSubgroupId(url) 抠 subgroupId —— AniBT / AnimeGarden 的
+         地址里没这个参数，直接抛「获取失败」。取值是后端那个 switch 认的字面量。 */
       type: isOther ? 'other' : current.value!.type,
-      bgmUrl: isOther ? otherBgmUrl.value.trim() : p.bgmUrl,
-      subgroup: p.subgroup,
+      bgmUrl: isOther ? otherBgmUrl.value.trim() : undefined,
       enable: true,
-    })
-    // rssToAni 不认匹配规则，选好的版本要自己带过去，否则挑了简中还是会全下
-    if (p.match.length) a.match = p.match
-    pending.value = a
-  } finally {
-    busy.value = false
-  }
+    },
+  }])
 }
 
 /* ── Bangumi 搜索：选中条目后后端直接给订阅对象，不经过 RSS ── */
@@ -136,27 +124,15 @@ async function searchBgm() {
 async function pickBgm(b: BgmInfo) {
   busy.value = true
   try {
-    pending.value = await api.getAniBySubjectId(String(b.id))
+    const a = await api.getAniBySubjectId(String(b.id))
+    handOff([{ani: a, label: a.title || b.nameCn || b.name || '订阅'}])
   } finally {
     busy.value = false
   }
 }
 
-/* 展示时把 `{{字幕组}}:` 前缀去掉，只留版本名。
-   这个函数不能写成模板里的内联正则 —— 里面的 }} 会被当成插值结束 */
-const bare = (m: string) => m.replace(/^\{\{.*?\}\}:/, '')
-
-/** 编辑框确认后真正落库 */
-async function onConfirmed(a: Ani) {
-  await ani.add(a)
-  pending.value = null
-  model.value = false
-  reset()
-}
-
 function reset() {
   urls.value = {mikan: '', anibt: '', garden: '', other: ''}
-  picked.value = {}
   otherBgmUrl.value = ''
   bgmKeyword.value = ''
   bgmResults.value = []
@@ -202,16 +178,7 @@ function reset() {
                 v-model="urls[s.id]" :placeholder="s.ph" auto-grow label="RSS 地址" rows="2"
                 persistent-hint hint="不支持聚合订阅：一次更新太多会漏集"/>
 
-            <!-- 从列表挑过来时把选中的东西显式摆出来，不然不知道匹配规则已经带上了 -->
-            <div v-if="pickedOf(s.id).subgroup" class="d-flex flex-wrap ga-2 mt-4">
-              <v-chip prepend-icon="mdi-account-group" size="small" variant="tonal">{{ pickedOf(s.id).subgroup }}</v-chip>
-              <v-chip v-for="m in pickedOf(s.id).match" :key="m" size="small" variant="tonal">
-                {{ bare(m) }}
-              </v-chip>
-              <v-chip v-if="!pickedOf(s.id).match.length" color="success" size="small" variant="tonal">全部版本</v-chip>
-            </div>
-
-            <v-btn :loading="busy" class="mt-5" color="primary" prepend-icon="mdi-arrow-right" variant="flat"
+            <v-btn class="mt-5" color="primary" prepend-icon="mdi-arrow-right" variant="flat"
                    @click="parse">
               解析
             </v-btn>
@@ -228,7 +195,7 @@ function reset() {
             </v-text-field>
             <v-textarea v-model="urls.other" auto-grow label="RSS 地址" placeholder="https://xxxx.com/a.xml" rows="2"
                         persistent-hint hint="dmhy 等只给磁力链接的 RSS 不支持 Aria2"/>
-            <v-btn :loading="busy" class="mt-5" color="primary" prepend-icon="mdi-arrow-right" variant="flat"
+            <v-btn class="mt-5" color="primary" prepend-icon="mdi-arrow-right" variant="flat"
                    @click="parse">
               解析
             </v-btn>
@@ -262,10 +229,12 @@ function reset() {
     </v-card>
   </v-dialog>
 
-  <SourceBrowserDialog v-model="browsing" :source="browseSource" @pick="onPicked"/>
-
-  <!-- 解析出来的订阅先给人过一眼再入库，避免匹配规则不对就开始下载 -->
-  <AniEditDialog v-if="pending" :item="pending" is-new @close="pending = null" @submit="onConfirmed"/>
+  <!--
+    浏览番剧列表：单条「添加」和勾一篮子「下一步」都从这里出去，
+    真正入库在「确认订阅信息」那个队列弹窗里逐条过。
+  -->
+  <SourceBrowserDialog v-model="browsing" :source="browseSource"
+                       @pick="onPicked" @pick-many="onPickedMany"/>
 </template>
 
 <style scoped>

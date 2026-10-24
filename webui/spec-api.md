@@ -3,7 +3,7 @@
 - 全局前缀 `/api`：WebMvcConfig 用 addPathPrefix 给所有 @RestController 统一加上
 - 响应恒为 `Result<T> = {code, message, data, t}`，code 是业务码（非 HTTP 状态码），200~299 成功
 - 「鉴权」列 ✓ = 方法上有 @Auth，需要 `Authorization: <token>` 头（无 Bearer 前缀）
-- 共 **72** 个端点 / 24 个 controller
+- 共 **71** 个端点 / 24 个 controller
 - 免鉴权：`/api/testIpWhitelist`、`/api/custom.css`、`/api/custom.js`、`/api/ping`、`/api/login`
 
 
@@ -33,7 +33,7 @@
 
 | 方法 | 路径 | 鉴权 | 返回 | 入参 | 说明 |
 |---|---|---|---|---|---|
-| POST | `/api/addAni` | ✓ | `Result<Void>` | `@RequestBody Ani ani` | 添加订阅 |
+| POST | `/api/addAni` | ✓ | `Result<Void>` | `@RequestBody Ani ani, @RequestParam(value = "override", defaultValue = "false"` | 添加订阅 |
 | POST | `/api/batchEnable` | ✓ | `Result<Void>` | `@RequestParam("value"` | 批量 启用/禁用 订阅 |
 | POST | `/api/deleteAni` | ✓ | `Result<Void>` | `@RequestBody List<String> ids, @RequestParam("deleteFiles"` | 删除订阅 |
 | POST | `/api/downloadPath` | ✓ | `Result<Map<String, Object>>` | `@RequestBody Ani ani` | 获取订阅的下载位置 |
@@ -147,7 +147,6 @@
 
 | 方法 | 路径 | 鉴权 | 返回 | 入参 | 说明 |
 |---|---|---|---|---|---|
-| POST | `/api/getSubtitles` | ✓ | `Result<List<PlayItem.Subtitles>>` | `@RequestParam("filename"` | 获取内封字幕 |
 | POST | `/api/playList` | ✓ | `Result<List<PlayItem>>` | `@RequestBody Ani ani` | 获取视频列表 |
 
 ## ProxyImageController

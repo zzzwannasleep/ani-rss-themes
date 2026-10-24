@@ -46,6 +46,8 @@ const dialog = ref(true)
 const loading = ref(false)
 const busy = ref('')
 const downloadPath = ref('')
+/** 种子位置弹窗里要显示的那条路径，空串 = 关着 */
+const pathDialog = ref('')
 const items = ref<Row[]>([])
 const omitList = ref<number[]>([])
 
@@ -160,6 +162,14 @@ async function copyText(text: string | undefined, what: string) {
     document.body.removeChild(el)
     ui.success(`${what}已复制`)
   }
+}
+
+/**
+ * 种子位置。用弹窗摊开而不是塞进表格列 —— 那条路径是
+ * `{configDir}/torrent/xxx.torrent` 那种绝对路径，宽屏上也要占掉两百多个像素。
+ */
+function showTorrentPath(path: string) {
+  pathDialog.value = path
 }
 
 async function removeTorrents() {
@@ -307,12 +317,34 @@ async function removeTorrents() {
                 <!-- 单独补一集时直接拿链接走，不用为一集去改订阅规则 -->
                 <v-btn :disabled="!it.torrent" icon="mdi-content-copy" size="x-small"
                        title="复制种子链接" variant="text" @click="copyText(it.torrent, '种子链接')"/>
+                <!--
+                  种子落盘之后后端才认得它的位置（Item.torrentPath，上游 3.2.42 db375d7
+                  把种子从内存挪到文件时加的）。整条路径常常上百个字符，塞进表格会把
+                  「改名后」那一列挤没，所以点开弹窗看。
+                -->
+                <v-btn v-if="it.torrentPath" icon="mdi-folder-open-outline" size="x-small"
+                       title="种子位置" variant="text" @click="showTorrentPath(it.torrentPath)"/>
               </td>
             </tr>
             </tbody>
           </v-table>
         </template>
       </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <!-- 种子位置：整条路径摊开，可选中复制 —— 拿去下载器里手动做种时要用 -->
+  <v-dialog :model-value="!!pathDialog" max-width="560" @update:model-value="pathDialog = ''">
+    <v-card>
+      <v-card-title class="pt-4">种子位置</v-card-title>
+      <v-card-text>
+        <div class="path text-body-2">{{ pathDialog }}</div>
+      </v-card-text>
+      <v-divider/>
+      <v-card-actions class="pa-3">
+        <v-spacer/>
+        <v-btn variant="text" @click="pathDialog = ''">关闭</v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>

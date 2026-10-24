@@ -1,5 +1,6 @@
 import {computed, onMounted, ref} from 'vue'
 import type {Ani} from '@shared/types'
+import type {BatchRequest} from '@/components/ani/batch'
 import {useAniStore} from '@/stores/ani'
 import {usePrefsStore} from '@/stores/prefs'
 import {saveBlob} from './saveBlob'
@@ -24,6 +25,23 @@ export function useAniScreen() {
     const previewOf = ref<Ani | null>(null)
     const importing = ref(false)
     const collecting = ref(false)
+
+    /**
+     * 「确认订阅信息」队列。
+     *
+     * 所有新增订阅的路（手填 RSS、Bangumi 搜索、番剧列表里勾几个字幕组）最后都排进这里，
+     * 逐条解析、逐条给人过目、逐条入库 —— 上游 3.2.48 起也是这么收口的。
+     * 放在这一层而不是某个弹窗里，是因为三个入口分处不同组件，而十一款界面共用这一份。
+     */
+    const batchOpen = ref(false)
+    const batchQueue = ref<BatchRequest[]>([])
+
+    /** 每次都给一个新数组：弹窗那边靠引用变化认「又排了一批」 */
+    function openBatch(requests: BatchRequest[]) {
+        if (!requests.length) return
+        batchQueue.value = requests
+        batchOpen.value = true
+    }
 
     const selectMode = ref(false)
 
@@ -86,6 +104,7 @@ export function useAniScreen() {
     return {
         ani, prefs,
         editing, adding, deleting, playlistOf, coverOf, ratingOf, previewOf, importing, collecting,
+        batchOpen, batchQueue, openBatch,
         selectMode, selectedIds, selectedAnis, grouped,
         exitSelect, toggleSelectMode, batch, exportSelected, on,
     }

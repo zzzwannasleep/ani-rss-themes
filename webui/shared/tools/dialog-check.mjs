@@ -19,15 +19,22 @@
  *   二、从列表挑回来的 Bgm 条目 / 字幕组 / 匹配规则只存了一份，
  *       切到另一栏手填地址再解析，这三样会一起递过去 ——
  *       建出来的订阅指着 B 的 RSS，名字季度集数却是 A 的。
+ *       上游 3.2.48 把这条路整个改掉了：挑完直接进「确认订阅信息」队列，
+ *       手填那一栏再也拿不到上一家挑剩的东西 —— 所以场景二改成量**新路的两个落点**。
  *
- * 第三条查的是另一件事：新建订阅那一步的「预览」在不在。
+ * 场景三查的是另一件事：队列里那一步的「预览」在不在。
  * 它一度被和「其他」一起藏掉了（理由是「新建的还没入库」）—— 而 api/previewAni
  * 是把整条订阅放在请求体里发的，入没入库不相干，恰恰是这一步最需要先看一眼：
  * 字幕组和匹配规则刚挑完，这条规则能命中几集、文件落到哪个目录，得先看再入库。
  *
+ * 场景五量的是这一轮新做的那条路本身（上游 3.2.48 的 BatchAdditionView）：
+ * 勾多个字幕组 → 一次交出去 → 队列里逐条过 → 撞名时问一次「覆盖」。
+ * 撞名那一档在演示站上永远走不到（假后端一律回成功），所以这里的 fetch 包装层
+ * 会按需伪造一次「订阅标题重复」—— 那是整条链路里最贵、也最容易被写错的分支。
+ *
  * 不看像素、不比截图，只把 window.fetch 包一层记流水，最后核对 URL 和请求体。
  *
- * 十一款都跑而不是只跑一款：这三条走的是同一批共用组件，但入口按钮是各款自己画的 ——
+ * 十一款都跑而不是只跑一款：这几条走的是同一批共用组件，但入口按钮是各款自己画的 ——
  * 同一颗「添加订阅」，群晖那款叫「新增」，麦金塔那款叫「新建订阅…」。
  * 只测一款的话，另外八款的入口什么时候断了都不知道。
  *
@@ -164,9 +171,21 @@ await send('Emulation.setDeviceMetricsOverride', {width: 1400, height: 1000, dev
 const KIT = String.raw`(() => {
   window.__log = []
   const of = window.fetch
-  window.fetch = (...a) => {
+  /*
+   * 撞名那一档：演示站上永远回成功，而「先失败 → 问一次 → 带 override 重发」
+   * 正是这一轮新做的那条路里最容易写错的一支（少了 override 就永远覆盖不上，
+   * 少了静默就变成「先弹红字再问要不要覆盖」两个提示打架）。
+   * 把 __dupAdd 设成 N，接下来 N 次**不带 override** 的 addAni 回「订阅标题重复」。
+   */
+  window.__dupAdd = 0
+  window.fetch = async (...a) => {
     const u = typeof a[0] === 'string' ? a[0] : a[0].url
     if (u.includes('/api/')) window.__log.push({url: u.replace(/^https?:\/\/[^/]+/, ''), body: a[1] && a[1].body})
+    if (window.__dupAdd > 0 && u.includes('/api/addAni') && !/[?&]override=true/.test(u)) {
+      window.__dupAdd--
+      return new Response(JSON.stringify({code: 400, message: '订阅标题重复', data: null, t: Date.now()}),
+        {headers: {'Content-Type': 'application/json'}})
+    }
     return of(...a)
   }
   window.__vis = sel => [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length)
@@ -316,50 +335,69 @@ async function checkPreset(id) {
         grp.filter(u => !/[?&]bgmId=\d+(&|$)/.test(u))
             .forEach(u => bad.push('bgmId 不是番剧 id —— ' + u))
 
-        /* ══ 场景二：挑回来的附带信息跟着人换栏 ══ */
+        /*
+         * 走到「挑完一个字幕组、队列弹窗已经开着」那一步。
+         * 后面三个场景都从这儿分叉，抄四遍迟早有一遍会漂。
+         */
+        const toQueue = async (tile = 0) => {
+            await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
+            await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
+            await step(`点开第 ${tile + 1} 部番`, `(window.__vis('.tile-head')[${tile}].click(), 1)`, 2000)
+            await step('第一个字幕组点「添加」', `window.__click('.group .v-btn', '添加')`, 900)
+            await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 2600)
+        }
+
+        /* ══ 场景二：挑回来的东西只进队列，漏不到手填那一栏 ══ */
         await open()
-        note('▶ 场景二：Mikan 挑一个字幕组 → 取消 → 切到 AniBT 手填地址 → 解析')
-        await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
-        await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
-        await step('第一个字幕组点「添加」', `window.__click('.group .v-btn', '添加')`, 900)
-        await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 2400)
-        await step('解析出来的编辑框点「取消」', `window.__click('.v-card-actions .v-btn', '取消')`, 1400)
-        await step('切到 AniBT 一栏', `window.__click('.v-tab', 'AniBT')`, 900)
-        await step('手填一条 AniBT 地址',
-            `window.__type('textarea', 'https://anibt.net/rss/anime.xml?bgmId=999999&groupSlug=zzz')`, 700)
-        await step('点「解析」', `window.__click('.v-btn', '解析')`, 2400)
+        note('▶ 场景二：Mikan 挑一个字幕组 → 进队列 → 关掉 → 切到 AniBT 手填地址 → 解析')
+        await toQueue()
 
         const log2 = await ev('window.__log', 0)
         dump(log2, true)
-        const parses = log2.filter(r => r.url.includes('rssToAni')).map(r => JSON.parse(r.body || '{}'))
-        if (parses.length < 2) {
-            bad.push(`只跑到 ${parses.length} 次 rssToAni，脚本没走通 —— 按钮文案改了？`)
+        const picked = log2.filter(r => r.url.includes('rssToAni')).map(r => JSON.parse(r.body || '{}')).pop()
+        if (!picked) {
+            bad.push('挑完一个字幕组之后没发 rssToAni —— 队列没起来，还是老的第二步？')
         } else {
-            const hand = parses[parses.length - 1]
-            if (!hand.url.includes('anibt.net')) bad.push('最后解析的不是手填那条地址 —— ' + hand.url)
+            if (!String(picked.url).includes('mikanani.me')) bad.push('队列解析的不是刚挑的那条地址 —— ' + picked.url)
+            if (!picked.bgmUrl) bad.push('挑回来的那条没带 bgmUrl —— 后端认不出番剧名和季度')
+            if (!picked.subgroup) bad.push('挑回来的那条没带字幕组')
+        }
+        const chips = await ev(`window.__vis('.queue-tab').length`, 0)
+        if (!chips) bad.push('挑完一个字幕组没有进「确认订阅信息」队列')
+
+        await esc()
+        await step('重新打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
+        await step('切到 AniBT 一栏', `window.__click('.v-tab', 'AniBT')`, 900)
+        await step('手填一条 AniBT 地址',
+            `window.__type('textarea', 'https://anibt.net/rss/anime.xml?bgmId=999999&groupSlug=zzz')`, 700)
+        await step('点「解析」', `window.__click('.v-btn', '解析')`, 2600)
+
+        const log2b = await ev('window.__log', 0)
+        dump(log2b, true)
+        const hand = log2b.filter(r => r.url.includes('rssToAni')).map(r => JSON.parse(r.body || '{}')).pop()
+        if (!hand) {
+            bad.push('手填地址后没发 rssToAni —— 脚本没走通，按钮文案改了？')
+        } else {
+            if (!String(hand.url).includes('anibt.net')) bad.push('最后解析的不是手填那条地址 —— ' + hand.url)
             for (const k of ['bgmUrl', 'subgroup', 'match']) {
                 const v = hand[k]
                 if (v && (!Array.isArray(v) || v.length))
                     bad.push(`手填的 AniBT 地址带上了 Mikan 那次挑的 ${k} —— ${JSON.stringify(v)}`)
             }
         }
+        await esc()
 
-        /* ══ 场景三：新建订阅那一步也要能预览 ══ */
+        /* ══ 场景三：队列里那一步也要能预览 ══ */
         await open()
-        note('▶ 场景三：Mikan 挑一个组 → 解析出来的编辑框里点「预览」')
-        await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
-        await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
-        await step('第一个字幕组点「添加」', `window.__click('.group .v-btn', '添加')`, 900)
-        await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 2400)
+        note('▶ 场景三：队列里的编辑框 → 点「预览」')
+        await toQueue()
 
         const hasPreview = await ev(
-            `window.__vis('.v-card-actions .v-btn').some(b => b.textContent.includes('预览'))`, 0)
+            `window.__topVis('.v-card-actions .v-btn').some(b => b.textContent.includes('预览'))`, 0)
         if (!hasPreview) {
-            bad.push('新建订阅的编辑框里没有「预览」—— 上游 Ani.vue 底下那颗是不分新建和编辑的')
+            bad.push('队列里的编辑框没有「预览」—— 上游 Ani.vue 底下那颗是不分新建和编辑的')
         } else {
-            await step('点「预览」', `window.__click('.v-card-actions .v-btn', '预览')`, 2400)
+            await step('点「预览」', `window.__topClick('.v-card-actions .v-btn', '预览')`, 2400)
             const log3 = await ev('window.__log', 0)
             dump(log3, true)
             const pv = log3.filter(r => r.url.includes('previewAni'))
@@ -375,19 +413,16 @@ async function checkPreset(id) {
             if (canDel) bad.push('新建订阅的预览里出现了「删除种子」—— 这条订阅还没有 id，删的不知道是谁的种子')
         }
 
-        /* ══ 场景四：从编辑框点开三家番剧列表，各家收到的定位条件不能串 ══
+        /* ══ 场景四：从队列里的编辑框点开三家番剧列表，各家收到的定位条件不能串 ══
          *
-         * 走的是「挑一个组 → 解析」这条路，落地的编辑框就是 AniEditDialog 本体
-         * （新建和编辑是同一个组件），所以这里量到的同时也是「编辑订阅」那条路。
+         * 走的是「挑一个组 → 进队列」这条路，落地的编辑框就是 AniEditDialog 本体
+         * （新建和编辑是同一个组件，队列里那个只是没有外层的 v-dialog），
+         * 所以这里量到的同时也是「编辑订阅」那条路。
          * 不去订阅列表上找「编辑」按钮：那颗是十一款各画各的，认文案迟早认岔。
          */
         await open()
-        note('▶ 场景四：解析出编辑框 → 主 RSS / 备用 RSS 两排各点开三家番剧列表')
-        await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
-        await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
-        await step('第一个字幕组点「添加」', `window.__click('.group .v-btn', '添加')`, 900)
-        await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 2400)
+        note('▶ 场景四：队列里的编辑框 → 主 RSS / 备用 RSS 两排各点开三家番剧列表')
+        await toQueue()
 
         const base = await ev('window.__layers()', 0)
         for (const where of ['主 RSS', '备用 RSS']) {
@@ -423,6 +458,55 @@ async function checkPreset(id) {
                 if (now !== base) bad.push(`关掉「${name}」番剧列表后还剩 ${now} 层弹窗（该是 ${base} 层）`)
             }
         }
+
+        /* ══ 场景五：这一轮新做的那条路 —— 勾几个组一次交出去、撞名问一次 ══
+         *
+         * 三件事一起量：
+         *  · 同一部番勾两个字幕组要合成**一条**订阅（第二个进备用 RSS），
+         *    而备用源得跟着请求一起交上去（3.2.48 的 RssToAniDTO.standbyRssList）；
+         *  · 勾完要进队列，不是就地入库；
+         *  · 撞名时先问一次，点了「覆盖」才带 override=true 重发。
+         *    第三件在演示站上永远走不到（假后端一律回成功），所以靠 __dupAdd 伪造一次。
+         */
+        await open()
+        note('▶ 场景五：勾两个字幕组 → 下一步 → 撞名 → 覆盖')
+        await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
+        await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
+        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        await step('勾第一个字幕组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 900)
+        await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 900)
+        await step('勾第二个字幕组', `(window.__vis('.group input[type=checkbox]')[1].click(), 1)`, 900)
+        await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 900)
+        await step('点「下一步」', `window.__click('.basket .v-btn', '下一步')`, 2600)
+
+        const log5 = await ev('window.__log', 0)
+        dump(log5, true)
+        const batchReq = log5.filter(r => r.url.includes('rssToAni')).map(r => JSON.parse(r.body || '{}')).pop()
+        if (!batchReq) {
+            bad.push('勾完点「下一步」之后没发 rssToAni')
+        } else if (!(batchReq.standbyRssList || []).length) {
+            bad.push('同一部番勾了两个字幕组，备用 RSS 没跟着一起交上去（3.2.48 的 standbyRssList）')
+        }
+        const tabs5 = await ev(`window.__vis('.queue-tab').length`, 0)
+        if (tabs5 !== 1) bad.push(`同一部番的两个字幕组该合成一条，实际进了 ${tabs5} 条`)
+
+        await ev('window.__dupAdd = 1', 0)
+        await step('点「添加」', `window.__topClick('.v-card-actions .v-btn', '添加')`, 1600)
+        const asked = await ev(
+            `window.__topVis('.v-card-title').some(t => t.textContent.includes('订阅重复'))`, 0)
+        if (!asked) {
+            bad.push('撞名时没有问一次「订阅重复」—— 没识别出那两句话，或者直接报错了')
+        } else {
+            await step('点「覆盖原订阅」', `window.__topClick('.v-card-actions .v-btn', '覆盖原订阅')`, 2200)
+            const log5b = await ev('window.__log', 0)
+            dump(log5b, true)
+            const adds = log5b.filter(r => r.url.includes('addAni'))
+            if (adds.length < 2) bad.push(`覆盖只发了 ${adds.length} 次 addAni，应该先失败一次再带 override 重发`)
+            if (!adds.some(r => /[?&]override=true/.test(r.url)))
+                bad.push('点了覆盖但重发时没带 override=true —— 覆盖永远不生效')
+        }
+        const left = await ev(`window.__vis('.queue-tab').length`, 0)
+        if (left) bad.push(`覆盖之后队列里还剩 ${left} 条 —— 加成功的那条该从队列里消失`)
     } catch (e) {
         bad.push('脚本没走通：' + e.message)
     }
@@ -443,7 +527,8 @@ for (const id of PRESETS) broken += (await checkPreset(id)).length ? 1 : 0
 console.log('')
 if (broken) console.error(`添加订阅体检不通过：${broken} / ${PRESETS.length} 款有问题`)
 else console.log(`✓ ${PRESETS.length} 款全部通过：换来源之后没有一样东西是上一家的，`
-    + `新建那一步能预览，三家番剧列表收到的定位条件也没串`)
+    + `挑回来的东西只进队列、漏不到手填那一栏，队列里能预览，三家番剧列表收到的定位条件没串，`
+    + `同一部番勾多个组会合成一条并带上备用 RSS，撞名时问一次、覆盖才带 override`)
 
 ws.close(); proc.kill(); server.close()
 process.exit(broken ? 1 : 0)

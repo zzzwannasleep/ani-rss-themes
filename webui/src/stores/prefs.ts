@@ -44,10 +44,13 @@ export const usePrefsStore = defineStore('prefs', () => {
     /* ── 页面显示项，对应上游「基本设置 → 页面设置」那几个复选框 ── */
     const showScore = persisted<boolean>('show-score', true)
     const showWeek = persisted<boolean>('show-week', true)
-    const showPlaylist = persisted<boolean>('show-playlist', true)
     const showLastDownloadTime = persisted<boolean>('show-last-download-time', true)
-    /** 上游强制不小于 1200，跟着来，否则从自带界面切过来会突然变窄 */
-    const maxContentWidth = persisted<number>('max-content-width', 1600)
+    /*
+     * 上游 3.2.52 把默认值从 1600 提到了 3200（`global.js` 里的 useLocalStorage），
+     * 理由和上游一样：超宽屏上 1600 之外全是空边，一屏看不了几条订阅。
+     * 已经存过值的浏览器不受影响 —— 那是本人自己拉过的宽度。
+     */
+    const maxContentWidth = persisted<number>('max-content-width', 3200)
 
     /**
      * 启动页（上游 3.2.20 加的，键同样沿用它的 `startup-page`）。
@@ -101,13 +104,14 @@ export const usePrefsStore = defineStore('prefs', () => {
      * 订阅页点封面做什么（上游 3.2.29 加的，键同样沿用它的 `cover-click-action`，
      * 在自带界面上选过的切过来还在）。
      *
-     * 默认值跟着预设走（PresetMeta.coverClick），和皮肤、视图一个道理。
-     * 不过上游用的是 vueuse 的 useLocalStorage，读一次就把它的默认值 'cover' 写回去了 ——
+     * 默认值跟着预设走（PresetMeta.coverClick），上游 3.2.38（656ef14）把它的默认
+     * 从 'cover' 改成了 'edit' —— 「换封面」是低频动作，点封面十次有九次是想改订阅。
+     * 不过上游用的是 vueuse 的 useLocalStorage，读一次就把默认值写回去了 ——
      * 打开过自带界面的浏览器里这个键必定有值，那就按那个值来，两边一致。
      * 认不出来的值（手改的、以后上游加的）退回默认，和上游 handleCoverClick 的处理一样。
      */
-    const coverClickAction = persisted<CoverClickAction>('cover-click-action', meta.coverClick ?? 'cover')
-    if (!COVER_CLICK_ACTIONS.includes(coverClickAction.value)) coverClickAction.value = meta.coverClick ?? 'cover'
+    const coverClickAction = persisted<CoverClickAction>('cover-click-action', meta.coverClick ?? 'edit')
+    if (!COVER_CLICK_ACTIONS.includes(coverClickAction.value)) coverClickAction.value = meta.coverClick ?? 'edit'
 
     /**
      * 壁纸的模糊（px）和浅色下那层白纱（0~1），只对带壁纸的皮肤生效（ThemeDef.wallpaper）。
@@ -121,7 +125,7 @@ export const usePrefsStore = defineStore('prefs', () => {
 
     return {
         mode, resolved, accent, themeId, loadCustomAssets,
-        showScore, showWeek, showPlaylist, showLastDownloadTime, maxContentWidth, startupPage,
+        showScore, showWeek, showLastDownloadTime, maxContentWidth, startupPage,
         cardSize, viewMode, sidebarCollapsed, wallpaperBlur, wallpaperVeil, coverClickAction,
     }
 })

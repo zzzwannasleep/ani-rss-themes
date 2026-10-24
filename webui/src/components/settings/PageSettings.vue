@@ -160,10 +160,6 @@ const serverFields: FieldDef[] = [
       </div>
       <v-switch v-model="prefs.showWeek" color="primary" density="compact" hide-details/>
     </div>
-    <div class="d-flex align-center py-1">
-      <div class="flex-grow-1 pr-4 text-body-2">显示视频列表入口</div>
-      <v-switch v-model="prefs.showPlaylist" color="primary" density="compact" hide-details/>
-    </div>
     <div class="d-flex align-center py-1 mb-4">
       <div class="flex-grow-1 pr-4 text-body-2">显示更新时间</div>
       <v-switch v-model="prefs.showLastDownloadTime" color="primary" density="compact" hide-details/>

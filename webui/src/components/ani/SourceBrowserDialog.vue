@@ -9,8 +9,8 @@ import type {
 import * as api from '@shared/api'
 import {posterUrl, proxyImage} from '@shared/http'
 import {formatSize, formatTime, fromNow} from '@shared/format'
-import {useAniStore} from '@/stores/ani'
 import {useUiStore} from '@/stores/ui'
+import type {PickedGroup} from './batch'
 
 /**
  * 番剧浏览器 —— 「按星期看这一季在播什么」。
@@ -31,9 +31,18 @@ const props = defineProps<{
    */
   preset?: Ani
 }>()
-const emit = defineEmits<{pick: [{url: string; bgmUrl?: string; subgroup?: string; match: string[]}]}>()
+const emit = defineEmits<{
+    pick: [{url: string; bgmUrl?: string; subgroup?: string; match: string[]}]
+    /**
+     * 篮子里的全部选择。
+     *
+     * 以前这里是**就地入库**：勾几个组、点批量添加、进度条跑完 location.reload()。
+     * 中间什么都看不见 —— 哪条解析失败、规则挑对没有，要回列表里才发现。
+     * 现在只把选择交出去，由调用方排进「确认订阅信息」那个弹窗逐条过。
+     */
+    pickMany: [PickedGroup[]]
+}>()
 
-const ani = useAniStore()
 const ui = useUiStore()
 const {mobile} = useDisplay()
 
@@ -120,9 +129,8 @@ const openKey = ref('')
 const groups = ref<Record<string, Group[]>>({})
 const groupLoading = ref(false)
 
-/** 批量添加的篮子，跨番剧累计 */
-const basket = ref<{item: Item; group: Group}[]>([])
-const batching = ref(0)
+/** 篮子，跨番剧累计。每一条带着它自己挑好的匹配规则 */
+const basket = ref<{item: Item; group: Group; match: string[]}[]>([])
 
 /**
  * 把订阅换成一个「定位条件」。**三家收的根本不是同一样东西**，别拿一个值喂三家：
@@ -301,68 +309,82 @@ async function copyMagnet(magnet?: string) {
 }
 
 /* ── 匹配规则选择 ── */
-const matchFor = ref<{item: Item; group: Group} | null>(null)
+/**
+ * 正在选匹配规则的那一组。
+ *
+ * `batch` 区分两种来意：勾复选框（batch=true，选完进篮子继续挑别的）和
+ * 点「添加」（batch=false，选完就直接把这一条交出去）。
+ * 上游 3.2.48 给批量那条路补上的正是这一步 —— 以前勾了复选框就直接进篮子，
+ * 挑的规则**没有任何地方能选**，于是批量加进去的订阅一律「全部版本」，
+ * 一集下好几遍；而单条添加是有这一步的，两条路的手感不一样。
+ */
+const matchFor = ref<{item: Item; group: Group; batch: boolean} | null>(null)
 const matchPick = ref('[]')
 
 /** 候选末尾补一个空数组当「全部」，和上游一致 */
 const matchOptions = computed(() => [...(matchFor.value?.group.regexList ?? []), []])
 
+/** 拼成上游的格式：每条是 `{{字幕组}}:正则`，前缀让后端知道这条规则属于谁 */
+const parsedMatch = () => (JSON.parse(matchPick.value) as string[])
+    .map(r => `{{${matchFor.value?.group.label}}}:${r}`)
+
 function openMatch(item: Item, group: Group) {
-  matchFor.value = {item, group}
+  matchFor.value = {item, group, batch: false}
   matchPick.value = '[]'
 }
 
 function confirmMatch() {
   const cur = matchFor.value
   if (!cur) return
+  const match = parsedMatch()
+  matchFor.value = null
+
+  if (cur.batch) {
+    basket.value.push({item: cur.item, group: cur.group, match})
+    return
+  }
+
   emit('pick', {
     url: cur.group.rss,
     bgmUrl: cur.group.bgmUrl || cur.item.bgmUrl,
     subgroup: cur.group.label,
-    // 上游的格式：每条是 `{{字幕组}}:正则`，前缀让后端知道这条规则属于谁
-    match: (JSON.parse(matchPick.value) as string[]).map(r => `{{${cur.group.label}}}:${r}`),
+    match,
   })
-  matchFor.value = null
   model.value = false
 }
 
-/* ── 批量添加 ── */
+/* ── 批量：篮子 ── */
 const inBasket = (g: Group) => basket.value.some(b => b.group.rss === g.rss)
 
+/**
+ * 勾 / 取消勾一个字幕组。
+ *
+ * 勾上时先开「选择要下载的版本」，规则确认了才进篮子 ——
+ * 直接塞进篮子的话，批量那条路永远拿不到规则（见 matchFor 那段注释）。
+ */
 function toggleBasket(item: Item, group: Group) {
   const i = basket.value.findIndex(b => b.group.rss === group.rss)
-  if (i >= 0) basket.value.splice(i, 1)
-  else basket.value.push({item, group})
+  if (i >= 0) {
+    basket.value.splice(i, 1)
+    return
+  }
+  matchFor.value = {item, group, batch: true}
+  matchPick.value = '[]'
 }
 
-/**
- * 同一部番选了多个字幕组时，第一个当主 RSS、其余进备用列表 —— 和上游一样。
- * 上游是从 rss 地址里抠 bangumiId 来分组的，这里直接按番剧的 key 分，少一次 URL 解析。
- */
-async function batchAdd() {
-  const byAnime = new Map<string, Group[]>()
-  for (const b of basket.value) {
-    const list = byAnime.get(b.item.key) ?? []
-    list.push(b.group)
-    byAnime.set(b.item.key, list)
-  }
-
-  batching.value = 0
-  try {
-    for (const list of byAnime.values()) {
-      const [main, ...rest] = list
-      const a = await api.rssToAni({url: main.rss, bgmUrl: main.bgmUrl, subgroup: main.label, enable: true})
-      if (rest.length) a.standbyRssList = rest.map(g => ({label: g.label, url: g.rss, offset: 0}))
-      await api.addAni(a)
-      batching.value += list.length
-    }
-    ui.success(`已添加 ${byAnime.size} 部番剧`)
-    basket.value = []
-    await ani.reload()
-    model.value = false
-  } finally {
-    batching.value = 0
-  }
+/** 把篮子整个交出去。真正入库在「确认订阅信息」那个弹窗里逐条过 */
+function handOffBasket() {
+  const picked: PickedGroup[] = basket.value.map(b => ({
+    animeKey: b.item.key,
+    animeTitle: b.item.title,
+    url: b.group.rss,
+    bgmUrl: b.group.bgmUrl || b.item.bgmUrl,
+    subgroup: b.group.label,
+    match: b.match,
+  }))
+  basket.value = []
+  emit('pickMany', picked)
+  model.value = false
 }
 
 /*
@@ -573,9 +595,9 @@ function search() {
           <span class="text-body-2">已选 {{ basket.length }} 个字幕组</span>
           <v-spacer/>
           <v-btn size="small" variant="text" @click="basket = []">清空</v-btn>
-          <v-btn :loading="batching > 0" color="primary" prepend-icon="mdi-plus-box-multiple"
-                 size="small" variant="flat" @click="batchAdd">
-            批量添加{{ batching ? `（${batching}/${basket.length}）` : '' }}
+          <v-btn color="primary" prepend-icon="mdi-playlist-plus" size="small" variant="flat"
+                 @click="handOffBasket">
+            下一步（{{ basket.length }}）
           </v-btn>
         </div>
       </v-slide-y-reverse-transition>

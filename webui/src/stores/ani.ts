@@ -109,6 +109,9 @@ export const useAniStore = defineStore('ani', () => {
         withReload(() => api.deleteAni(deleteFiles, ids), `已删除 ${ids.length} 项`)
     const refreshOne = (ani: Ani) => withReload(() => api.refreshAni(ani), '已刷新')
     const refreshAll = () => withReload(() => api.refreshAll(), '已触发全部刷新')
+    /* 单条刮削：封面菜单上那两颗「刮削 / 强制刮削」走这里，和批量刮削共用一套提示 */
+    const scrapeOne = (ani: Ani, force: boolean) =>
+        withReload(() => api.scrape(force, ani), force ? '已触发强制刮削' : '已触发刮削')
     const setEnabled = (ids: string[], value: boolean) =>
         withReload(() => api.batchEnable(value, ids), value ? '已启用' : '已禁用')
     const batchScrape = (ids: string[], force: boolean) =>
@@ -120,6 +123,6 @@ export const useAniStore = defineStore('ani', () => {
         raw, loading, keyword, status, season, selected,
         all, filtered, byWeek, total, enabledCount, seasons, filtering,
         reload, toggleSelect, clearSelection, selectAll, clearFilters,
-        add, update, remove, refreshOne, refreshAll, setEnabled, batchScrape, updateEpisodes,
+        add, update, remove, refreshOne, refreshAll, setEnabled, batchScrape, updateEpisodes, scrapeOne,
     }
 })

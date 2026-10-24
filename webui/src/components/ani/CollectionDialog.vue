@@ -53,12 +53,15 @@ function blankAni(): Ani {
 
 const busy = ref('')
 const files = ref<File[]>([])
-/**
- * 种子从哪来。torrent 一个字段两种含义：.torrent 的 base64，或者一条磁力链接
- * （上游 3.2.34 起，6b7dde8；后端看开头是不是 magnet:? 分流）。
+/*
+ * 合集只收 .torrent。
+ *
+ * 上游 3.2.34 给 CollectionInfo.torrent 开了第二种含义（磁力链接，后端看开头是不是
+ * `magnet:?` 分流），3.2.38（b4fc29a「移除合集下载磁力链接支持」）又收掉了 ——
+ * 磁力要先在服务端 DHT 上把元数据捞回来才认得出里面有哪些集，慢的时候几十秒，
+ * 而「预览命中哪些集」正是这个框存在的理由。所以那个二选一的开关一并去掉，
+ * 磁力链接仍然可以从「其它 RSS」那条路进来。
  */
-const source = ref<'file' | 'magnet'>('file')
-/** 后端要的是 .torrent 的 base64 或磁力链接，不是文件本身 */
 const data = ref<CollectionInfo>({torrent: '', ani: blankAni(), bgmInfo: {}})
 const keyword = ref('')
 const results = ref<BgmInfo[]>([])
@@ -105,35 +108,10 @@ async function onPick(picked: File | File[]) {
   }
 }
 
-/*
- * 换来源就把旧的清掉 —— 否则上一个来源留下的值会被当成这一个来源提交：
- * 选过种子再切到磁力，框里是空的，发出去的却还是那串 base64。
- */
-function switchSource() {
+/** 清空已经读进来的种子及其 base64 内容 */
+function clearTorrent() {
   files.value = []
   data.value.torrent = ''
-}
-
-/**
- * 磁力链接要后端先去 DHT 上拿元数据（jlibtorrent），慢的时候几十秒。
- * 所以不跟着每次按键走，敲回车或移开焦点才认一次字幕组，顺带当作「这条链接能不能解析」的检验。
- */
-const magnetOk = (v: string) => /^magnet:\?/i.test(v.trim())
-let lastMagnet = ''
-
-async function onMagnet() {
-  const v = (data.value.torrent ?? '').trim()
-  data.value.torrent = v
-  if (!magnetOk(v) || v === lastMagnet) return
-  lastMagnet = v
-  busy.value = 'magnet'
-  try {
-    await guessSubgroup()
-  } finally {
-    /* 失焦就会触发这里 —— 贴完链接直接点「预览」，预览已经把 busy 换成了 'preview'，
-       这边后回来不能把它清掉，不然预览还在跑按钮就不转了 */
-    if (busy.value === 'magnet') busy.value = ''
-  }
 }
 
 async function guessSubgroup() {
@@ -246,11 +224,9 @@ async function fillDownloadPath() {
   }
 }
 
-/** 磁力那一格里填的不是磁力链接：拦在前面，别发给后端当 base64 去解 */
+/** 还没读进种子就点预览 / 开始：拦在前面，别把空 base64 发给后端 */
 function sourceMissing(): string {
-  const t = data.value.torrent?.trim()
-  if (source.value === 'magnet') return t && magnetOk(t) ? '' : '请填入以 magnet:? 开头的磁力链接'
-  return t ? '' : '请先选择种子文件'
+  return data.value.torrent?.trim() ? '' : '请先选择种子文件'
 }
 
 async function doPreview() {
@@ -288,8 +264,6 @@ async function start() {
 
 function reset() {
   files.value = []
-  source.value = 'file'
-  lastMagnet = ''
   data.value = {torrent: '', ani: blankAni(), bgmInfo: {}}
   keyword.value = ''
   results.value = []
@@ -314,36 +288,16 @@ function reset() {
           刮削与重命名才能按正确的剧集信息进行。
         </div>
 
-        <v-btn-toggle v-model="source" class="mb-3" color="primary" density="compact" divided mandatory
-                      variant="outlined" @update:model-value="switchSource">
-          <v-btn prepend-icon="mdi-file-download-outline" value="file">种子文件</v-btn>
-          <v-btn prepend-icon="mdi-magnet" value="magnet">磁力链接</v-btn>
-        </v-btn-toggle>
-
-        <v-textarea
-            v-if="source === 'magnet'"
-            v-model="data.torrent"
-            :loading="busy === 'magnet'"
-            auto-grow
-            class="mb-3"
-            hint="需要 ani-rss 3.2.34 及以上。后端要先去拿元数据，识别和预览会慢一些"
-            label="磁力链接"
-            persistent-hint
-            placeholder="magnet:?xt=urn:btih:..."
-            rows="2"
-            @blur="onMagnet"
-            @keydown.enter.prevent="onMagnet"
-        />
-
         <v-file-input
-            v-else
             v-model="files"
             :loading="busy === 'upload'"
             accept=".torrent"
             class="mb-3"
+            clearable
             label="合集种子（.torrent）"
             prepend-icon="mdi-file-download-outline"
             show-size
+            @click:clear="clearTorrent"
             @update:model-value="onPick"
         />
 

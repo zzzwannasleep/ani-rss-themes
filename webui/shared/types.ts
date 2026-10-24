@@ -350,7 +350,7 @@ export interface BgmMeAvatar {
 
 /** CollectionInfo —— 合集信息 */
 export interface CollectionInfo {
-    /** 种子文件 Base64 或磁力链接 */
+    /** 种子文件 Base64 */
     torrent?: string
     /** 订阅 */
     ani?: Ani
@@ -528,8 +528,6 @@ export interface Config {
     customEpisodeStr?: string
     /** 自定义集数获取规则 groupIndex */
     customEpisodeGroupIndex?: number
-    /** OpenList driver */
-    provider?: string
     /** 添加行订阅是是否开启自动上传 */
     upload?: boolean
     /** 上传速度限制 */
@@ -554,10 +552,6 @@ export interface Config {
     updateTotalEpisodeNumber?: boolean
     /** 强制更新总集数信息 */
     forceUpdateTotalEpisodeNumber?: boolean
-    /** OpenList 离线超时 分钟 */
-    openListDownloadTimeout?: number
-    /** OpenList 下载重试次数 */
-    openListDownloadRetryNumber?: number
     /** 设置备份 */
     configBackup?: boolean
     /** 备份天数 */
@@ -568,8 +562,6 @@ export interface Config {
     completedPathTemplate?: string
     /** 通知 */
     notificationConfigList?: NotificationConfig[]
-    /** 添加订阅时自动复制主rss至备用rss */
-    copyMasterToStandby?: boolean
     /** 排序方式 */
     sortType?: AniSortTypeEnum
     /** 代理列表 */
@@ -578,8 +570,6 @@ export interface Config {
     scrape?: boolean
     followDay?: number
     bangumiIniEnabled?: boolean
-    /** 重名的订阅将允许被替换 */
-    replace?: boolean
     /** 最大文件名长度 不包含后缀 如: .mkv .mp4 */
     maxFileNameLength?: number
     /** 限制尝试次数 */
@@ -776,6 +766,8 @@ export interface Item {
     length?: number
     /** 已下载 */
     hasDownloaded?: boolean
+    /** 种子位置 */
+    torrentPath?: string
     /** 主 rss */
     master?: boolean
     /** 字幕组 */
@@ -1010,24 +1002,6 @@ export interface OpenListFileInfo {
     path?: string
 }
 
-/** OpenListTaskInfo */
-export interface OpenListTaskInfo {
-    id?: string
-    name?: string
-    creator?: string
-    creatorRole?: number
-    state?: OpenListTaskInfoState
-    status?: string
-    progress?: number
-    startTime?: string
-    endTime?: string
-    totalBytes?: string
-    error?: string
-}
-
-/** OpenListTaskInfoState */
-export type OpenListTaskInfoState = 'Pending' | 'Running' | 'Succeeded' | 'Canceling' | 'Canceled' | 'Error' | 'Failing' | 'Failed' | 'Waiting_for_Retry' | 'Preparing_to_Retry'
-
 /** PlayItem —— 视频列表 */
 export interface PlayItem {
     /** 显示标题 */
@@ -1044,16 +1018,6 @@ export interface PlayItem {
     formatSize?: string
     /** 扩展名 */
     extName?: string
-    subtitles?: PlayItemSubtitles[]
-}
-
-/** PlayItemSubtitles */
-export interface PlayItemSubtitles {
-    html?: string
-    name?: string
-    url?: string
-    content?: string
-    type?: string
 }
 
 /** ProxyTest —— 代理测试 相应体 */
@@ -1136,6 +1100,7 @@ export interface RssToAniDTO {
     bgmUrl?: string
     subgroup?: string
     enable?: boolean
+    standbyRssList?: StandbyRss[]
 }
 
 /** ThemoviedbDTO */

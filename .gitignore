@@ -27,3 +27,6 @@ dist-webui/
 # 本地实例地址/账号，永不进版本库
 *.env
 !*.env.example
+
+# 体检脚本的输出日志，跑一次就变，不入库
+webui/.audit-*.log

@@ -3,10 +3,10 @@
  *
  * 一个端点一个函数，命名与上游 ani-rss-ui/src/js/http.js 保持一致，方便两边对照排查。
  * 与上游的差异只有一处但很重要：**查询参数一律走 URLSearchParams 转义**。
- * 上游是裸模板串拼接（`api/searchBgm?name=${name}`），番剧名里有 & 就会截断，
- * getSubtitles 传 base64 时里面的 '+' 还会被服务端解成空格。
+ * 上游是裸模板串拼接（`api/searchBgm?name=${name}`），番剧名里有 & 就会截断；
+ * testProxy 那个 base64 的 url 里带 '+'，裸拼会被服务端解成空格。
  *
- * 端点清单来源：从 test 分支源码实抽并自校验，共 72 个，成表在 webui/spec-api.md ——
+ * 端点清单来源：从 test 分支源码实抽并自校验，共 71 个，成表在 webui/spec-api.md ——
  * 用 shared/tools/extract-api.mjs 对着上游源码重跑就能更新，
  * 它会核对「抽出来的」和「源码里声明的」是不是一一对上，对不上直接失败。
  * 其中 file / proxyImage 这两个走 <img src>、设不了请求头的在 http.ts 里，不在这份。
@@ -17,7 +17,7 @@ import type {
     About, Ani, AniBT, AniBTGroup, AniBTQueryDTO, AnimeGardenGroup, AnimeGardenWeek,
     BgmInfo, BgmMe, CollectionInfo, Config, EmbyViews, ImportAniDataDTO, Item, ListAni,
     Log, Login, Mikan, MikanGroup, MikanSeason, NotificationConfig, PlayItem,
-    PlayItemSubtitles, ProxyTest, RssToAniDTO, ThemoviedbVO, TorrentsInfo, UpdateInfo,
+    ProxyTest, RssToAniDTO, ThemoviedbVO, TorrentsInfo, UpdateInfo,
 } from './types'
 
 /** 把查询参数拼到路径上，值一律转义 */
@@ -101,7 +101,25 @@ export const login = (user: Login) =>
 /* ==================== 订阅 ==================== */
 
 export const listAni = () => http.post<ListAni>('api/listAni')
-export const addAni = (ani: Ani) => http.post<void>('api/addAni', ani)
+
+/*
+ * 添加订阅。override=true 时覆盖重名订阅。
+ *
+ * 上游 3.2.48（9000616）加的：以前「重名怎么办」是设置里一个全局开关
+ * （`Config.replace`），现在是添加这一步问一次 —— 撞名了才问，不撞不问。
+ * 老后端忽略这个参数（Spring 不管多出来的查询参数），行为退回原来的全局开关。
+ */
+export const addAni = (ani: Ani, override = false) => http.post<void>(q('api/addAni', {override}), ani)
+
+/**
+ * 静默版：失败不弹全局提示，只抛给调用方。
+ *
+ * 批量确认那条路要自己分辨「撞名」和真失败 —— 撞名时先弹一句红字错误、
+ * 再紧接着问「要不要覆盖」，看着像两个互相打架的提示。
+ */
+export const addAniQuiet = (ani: Ani, override = false) =>
+    http.postQuiet<void>(q('api/addAni', {override}), ani)
+
 /** move=true 时后端会把已下载的文件一并移动到新路径 */
 export const setAni = (move: boolean, ani: Ani) => http.post<void>(q('api/setAni', {move}), ani)
 export const deleteAni = (deleteFiles: boolean, ids: string[]) =>
@@ -112,6 +130,15 @@ export const refreshCover = (ani: Ani) => http.post<string>('api/refreshCover', 
 /** 预览订阅：返回下载位置、匹配到的资源项、以及推断出的遗漏集数 */
 export const previewAni = (ani: Ani) =>
     http.post<{downloadPath: string; items: Item[]; omitList: number[]}>('api/previewAni', ani)
+/**
+ * RSS → 订阅对象。
+ *
+ * 3.2.48（bd69f45「优化订阅添加流程」）给 RssToAniDTO 加了 standbyRssList：
+ * 同一部番挑了好几个字幕组时，一次把「主源 + 备用源」整份交上去，
+ * 后端解析完直接带着备用列表回来，不用客户端再补一次。
+ * 顺带一提：这个接口**不认匹配规则**（DTO 里没有 match），
+ * 挑好的版本要调用方自己贴回返回值上。
+ */
 export const rssToAni = (dto: RssToAniDTO) => http.post<Ani>('api/rssToAni', dto)
 export const downloadPath = (ani: Ani) => http.post<{downloadPath: string}>('api/downloadPath', ani)
 export const importAni = (dto: ImportAniDataDTO) => http.post<void>('api/importAni', dto)
@@ -217,18 +244,34 @@ export const getEmbyViews = (c: NotificationConfig) => http.post<EmbyViews[]>('a
 
 /* ==================== 播放 ==================== */
 
-export const playList = (ani: Ani) => http.post<PlayItem[]>('api/playList', ani)
-/*
- * 内封字幕（从 mkv 容器里抽出来）。
+/**
+ * 同目录的外挂字幕（3.2.46 以前）。
  *
- * 目前没有调用方，且这是**有意**的：网页播放走的是 webplayer，它在本地拆容器时
- * 顺手就把内封轨拿到了，再让服务端抽一遍是多跑一趟。留着是因为它是后端契约的一部分，
- * 换播放器或做「下载字幕」时就要用上 —— 别把它当成漏做的功能又补一遍 UI。
- *
- * 文件路径要 base64；上游用裸拼接，base64 里的 '+' 会被解成空格，这里走 URLSearchParams
+ * `PlayItem.subtitles` 与 `api/getSubtitles` 一起被上游删掉了（d6f20f3「WASM 播放器」），
+ * types.ts 里已经没有这两个东西。但 3.2.46 以前的后端照旧会扫视频同目录的
+ * `.ass` / `.srt` 并在 playList 里带回来，而「同一集放了简繁两条字幕，先挑一条」
+ * 正是靠它 —— 一并删掉的话，还在用老后端的人会突然少一个功能，而且看不出为什么。
+ * 所以在这里补一份本地声明（别写回 types.ts，下次重跑生成器会被覆盖）。
  */
-export const getSubtitles = (filename: string) =>
-    http.post<PlayItemSubtitles[]>(q('api/getSubtitles', {filename: base64Encode(filename)}))
+export interface LegacySubtitle {
+    html?: string
+    name?: string
+    url?: string
+    content?: string
+    type?: string
+}
+
+export type PlayableItem = PlayItem & {subtitles?: LegacySubtitle[]}
+
+export const playList = (ani: Ani) => http.post<PlayableItem[]>('api/playList', ani)
+
+/*
+ * 内封字幕那一路（`api/getSubtitles`）上游 3.2.46（d6f20f3「WASM 播放器」）整个删了：
+ * 换成 movi-player 之后，容器在浏览器本地拆开，字幕轨本来就是它自己顺手拿的，
+ * 服务端再抽一遍是白跑一趟。PlayItem.subtitles 也跟着没了。
+ * 我们这边走的是 webplayer，同一个道理 —— 所以这里没有对应的封装，
+ * 不是漏了。见 webui/shared/player.ts。
+ */
 
 /* ==================== 关于 / 维护 ==================== */
 
