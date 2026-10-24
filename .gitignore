@@ -30,3 +30,6 @@ dist-webui/
 
 # 体检脚本的输出日志，跑一次就变，不入库
 webui/.audit-*.log
+
+# 本地拼出来的预览站点（等价于 Pages 那一份布局），不入库
+.preview/
