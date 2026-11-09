@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref, watch} from 'vue'
+import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useDisplay} from 'vuetify'
 import type {Ani, RssToAniDTO} from '@shared/types'
 import * as api from '@shared/api'
@@ -69,6 +69,167 @@ const STATUS: Record<Status, {text: string; color: string}> = {
     ready: {text: '待确认', color: 'primary'},
     error: {text: '失败', color: 'error'},
 }
+
+/* ── 队列条：一条一条横着排，多了就滑 ──
+ *
+ * ── 为什么不是 v-tabs（3.2.52 那一版就是这么叠起来的）──
+ *
+ * 上游用 el-tabs，我们跟了 v-tabs。但 Vuetify 的 .v-tab 实际是 .v-btn：
+ * `.v-tab.v-tab.v-btn { min-width: 90px }` 是 **(0,3,0)** ——
+ * 组件自己那条 `.queue-tab` 只有 (0,1,0)，加 scoped 也才 (0,2,0)，改不动；
+ * 而 .v-btn 是 `inline-grid; flex-shrink: 0`，插槽又被包进不收缩的 .v-btn__content，
+ * 标题又是 nowrap：宽度钉死、内容缩不动，字就漫出按钮盒子，
+ * 压到隔壁那条身上 —— 看着像「标题糊在一起」，其实是溢出叠字。
+ * 条数再一多，后面的被前面那些宽盒子挤出可视区，滚也滚不动（slide-group 只在
+ * 有箭头时替你挪），于是点都点不到。
+ *
+ * 所以这一层整个自己排，不留 Vuetify 的中间层：
+ *   · flex 排，条与条之间有缝，名字可以截断，谁都盖不到谁；
+ *   · 宽度有上限，超出的部分由容器横着滚过去（滚轮 / 中键拖 / 两端箭头三条路）；
+ *   · 切到哪一条就把它滚进视野 —— 加进队列的顺序是先第一条，
+ *     光标跟着 active 走，永远看得见当前这条。
+ * 语义照旧是 tablist / tab / tabpanel：键盘 Tab 进来、左右键换条、Home/End 到头。
+ */
+const strip = ref<HTMLElement>()
+const canLeft = ref(false)
+const canRight = ref(false)
+
+/** 队列条和下方正文是一对 aria 关系，id 得写死；tab 那半按条目 id 拼 */
+const PANE_ID = 'ani-queue-pane'
+const tabId = (id: string) => `ani-queue-tab-${id}`
+
+function syncEdges() {
+    const el = strip.value
+    if (!el) return
+    // 亚像素：到头时 scrollLeft 可能是 max - 0.5，留 1px 容差（同 DashboardView 的轨道）
+    canLeft.value = el.scrollLeft > 1
+    canRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+}
+
+/** 让当前这条滚进视野。手动算落点，不用 scrollIntoView —— 那会把外层的弹窗正文一起带走 */
+function revealActive() {
+    const box = strip.value
+    if (!box) return
+    const tab = box.querySelector<HTMLElement>('.queue-tab--active')
+    if (!tab) return
+    const pad = 8
+    const left = tab.offsetLeft - pad
+    const right = tab.offsetLeft + tab.offsetWidth + pad
+    if (left < box.scrollLeft) box.scrollLeft = Math.max(0, left)
+    else if (right > box.scrollLeft + box.clientWidth) box.scrollLeft = right - box.clientWidth
+    syncEdges()
+}
+
+/**
+ * 竖着滚滚轮 → 队列条横着走。
+ *
+ * 两处必须放行，否则鼠标停在条上时弹窗正文就滚不动了：
+ * 触控板本来就在横着滑（deltaX 更大，浏览器自己会滚这条），
+ * 以及条已经顶到这一头。
+ */
+function onWheel(e: WheelEvent) {
+    const el = strip.value
+    if (!el || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+    const max = el.scrollWidth - el.clientWidth
+    if (max <= 0) return
+    if (e.deltaY < 0 ? el.scrollLeft <= 0 : el.scrollLeft >= max - 1) return
+    e.preventDefault()
+    el.scrollLeft += e.deltaY
+}
+
+/**
+ * 箭头翻页：按整数条翻，一屏放几条就翻几条，留一条重叠当上下文。
+ * 算绝对落点而不是 scrollBy —— 用滚轮随手滑过之后 scrollLeft 是个零头，
+ * 相对翻页会把这个零头一路带下去，此后每一屏都卡在半条上。
+ */
+function page(dir: 1 | -1) {
+    const el = strip.value
+    if (!el) return
+    const first = el.querySelector<HTMLElement>('.queue-tab')
+    if (!first) return
+    // 步距 = 条宽 + 间距，宽度是内容撑出来的，只能量不能算
+    const next = first.nextElementSibling as HTMLElement | null
+    const pitch = next ? next.offsetLeft - first.offsetLeft : first.offsetWidth + 8
+    const step = Math.max(1, Math.floor(el.clientWidth / pitch) - 1)
+    el.scrollTo({left: (Math.round(el.scrollLeft / pitch) + dir * step) * pitch, behavior: 'smooth'})
+}
+
+/* ── 中键拖动：按住滚轮左右拽 ──
+ *
+ * 中键在浏览器里默认是「自动滚动」那个四向光标，得在 mousedown 上 preventDefault
+ * 才按住（模板里 `.middle.prevent` 就是干这个的）。之后用指针捕获把 move/up 全收过来，
+ * 指针滑出条外也照拖不误。
+ */
+let pan: {x: number; left: number; id: number} | null = null
+
+function onStripDown(e: PointerEvent) {
+    if (e.button !== 1) return
+    const el = strip.value
+    if (!el || el.scrollWidth - el.clientWidth <= 1) return
+    pan = {x: e.clientX, left: el.scrollLeft, id: e.pointerId}
+    el.classList.add('is-panning')
+    try {
+        el.setPointerCapture(e.pointerId)
+    } catch {
+        // 拿不到捕获也能用，只是拖出条外会断
+    }
+}
+
+function onStripMove(e: PointerEvent) {
+    if (!pan || !strip.value) return
+    strip.value.scrollLeft = pan.left - (e.clientX - pan.x)
+}
+
+function endPan(e: PointerEvent) {
+    if (!pan || e.pointerId !== pan.id) return
+    pan = null
+    const el = strip.value
+    el?.classList.remove('is-panning')
+    try {
+        el?.releasePointerCapture(e.pointerId)
+    } catch {
+        // 指针已经自己释放过了
+    }
+}
+
+/** 方向键换条。焦点跟着走，不然按一下就丢在条外，第二个方向键按不出来 */
+function onTabKey(e: KeyboardEvent) {
+    const id = (e.currentTarget as HTMLElement).dataset.queueId
+    const i = entries.value.findIndex(x => x.id === id)
+    if (i < 0) return
+    let next = -1
+    if (e.key === 'ArrowRight') next = Math.min(entries.value.length - 1, i + 1)
+    else if (e.key === 'ArrowLeft') next = Math.max(0, i - 1)
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = entries.value.length - 1
+    if (next < 0) return
+    e.preventDefault()
+    const target = entries.value[next]
+    if (!target) return
+    active.value = target.id
+    void nextTick(() => strip.value?.querySelector<HTMLElement>(`[data-queue-id="${target.id}"]`)?.focus())
+}
+
+// 换条就把它滚进来；名字解析完会变长（「订阅 2」→ 真实番剧名），宽度跟着变，边界重算一遍
+watch(active, () => nextTick(revealActive))
+
+/*
+ * 尺寸相关的重算：条数变、名字变、队列条自己刚挂上（弹窗是淡入的，
+ * 挂上那一刻宽度可能还是 0，量一遍不够）。
+ * 所以 nextTick 之后再来一帧 —— 过渡一开跑，容器宽度才是最终值。
+ */
+const refresh = () => {
+    syncEdges()
+    revealActive()
+}
+watch([strip, () => entries.value.length, () => entries.value.map(e => e.label).join('|')], () => nextTick(() => {
+    refresh()
+    requestAnimationFrame(refresh)
+}))
+
+/* 弹窗宽度会变（全屏切换、窗口缩放），条的溢出与否跟着变 */
+onMounted(() => window.addEventListener('resize', refresh))
+onBeforeUnmount(() => window.removeEventListener('resize', refresh))
 
 let seq = 0
 
@@ -237,22 +398,75 @@ defineExpose({open: startBatch})
       <v-divider/>
 
       <!--
-        标签条用 v-tabs 而不是一排 chip。
-        chip 那颗 × 是个 button，而 v-tab 本身也是 button —— 想「一条上挂一个关闭键」
-        就只能拿 chip 当标签用，而 chip 不在 group 里时是个普通 span：键盘 Tab 不到、
-        回车点不动，手机上还只有 24px 高。上游那套 el-tabs 自带 closable，
-        我们这边换一条路：去留在编辑框上方那颗「跳过这一条」，
-        标签条只负责切和显示状态 —— 三样各归各位，也不用往按钮里塞按钮。
+        队列条自己做，不用 v-tabs —— 为什么见上面那段注释（Vuetify 把 .v-tab 的
+        min-width 钉在 90px 且内容不收缩，标题一长就叠字，条多了滚不到）。
+        一条上只放「名字 + 状态」，关闭走编辑框上方那颗「跳过这一条」：
+        不往按钮里塞按钮，键盘 Tab 得到、回车点得动，手机上也有 40px 高。
       -->
-      <v-tabs v-if="entries.length" v-model="active" density="comfortable" show-arrows>
-        <v-tab v-for="e in entries" :key="e.id" :value="e.id" class="queue-tab">
-          <span class="queue-name">{{ e.label }}</span>
-          <span :class="`text-${STATUS[e.status].color}`" class="queue-state">{{ STATUS[e.status].text }}</span>
-        </v-tab>
-      </v-tabs>
+      <div v-if="entries.length" class="queue-bar">
+        <div
+            ref="strip"
+            aria-label="待确认的订阅"
+            class="queue-strip"
+            role="tablist"
+            @lostpointercapture="endPan"
+            @mousedown.middle.prevent
+            @pointercancel="endPan"
+            @pointerdown="onStripDown"
+            @pointermove="onStripMove"
+            @pointerup="endPan"
+            @scroll.passive="syncEdges"
+            @wheel="onWheel"
+        >
+          <button
+              v-for="e in entries"
+              :key="e.id"
+              :aria-controls="PANE_ID"
+              :aria-selected="e.id === active"
+              :class="['queue-tab', {'queue-tab--active': e.id === active}]"
+              :data-queue-id="e.id"
+              :id="tabId(e.id)"
+              :tabindex="e.id === active ? 0 : -1"
+              role="tab"
+              type="button"
+              @click="active = e.id"
+              @keydown="onTabKey"
+          >
+            <span class="queue-name">{{ e.label }}</span>
+            <span :class="`text-${STATUS[e.status].color}`" class="queue-state">{{ STATUS[e.status].text }}</span>
+          </button>
+        </div>
+        <!--
+          只有一条时没什么可翻的，箭头出来只是占地方。
+          手机上也不给：全屏弹窗本来就窄，两颗箭头吃掉 80px 就是少看一条；
+          触屏有原生横滑，用手指比拿箭头一下一下点还快。
+        -->
+        <template v-if="entries.length > 1 && !mobile">
+          <v-btn
+              :disabled="!canLeft"
+              aria-label="往前翻几条"
+              class="queue-nav"
+              density="comfortable"
+              icon="mdi-chevron-left"
+              size="small"
+              variant="text"
+              @click="page(-1)"
+          />
+          <v-btn
+              :disabled="!canRight"
+              aria-label="往后翻几条"
+              class="queue-nav"
+              density="comfortable"
+              icon="mdi-chevron-right"
+              size="small"
+              variant="text"
+              @click="page(1)"
+          />
+        </template>
+      </div>
       <v-divider v-if="entries.length"/>
 
-      <v-card-text class="pane">
+      <v-card-text :id="PANE_ID" :aria-labelledby="active ? tabId(active) : undefined" class="pane" role="tabpanel">
         <template v-if="current">
           <div v-if="current.status === 'loading'" class="center">
             <v-progress-circular indeterminate/>
@@ -314,13 +528,95 @@ defineExpose({open: startBatch})
 </template>
 
 <style scoped>
-/* 一条标签上同时摆名字和状态：名字可以让位，状态不能（它就是这一条为什么在这儿的原因） */
-.queue-tab {
-    min-width: 0;
-    max-width: 280px;
+/*
+ * 队列条。
+ *
+ * 三件事写在这里，缺一件就会回到「标题叠在一起、后面几条点不到」那个样子：
+ *   · 条本身可以被压缩（flex: 1 1 auto + min-width: 0），容器不许被内容撑宽 ——
+ *     撑宽了就是整条伸出弹窗外面；
+ *   · 每条有宽度上限、名字 ellipsis、条与条之间留缝 —— 内容缩得动才不叠字；
+ *   · 溢出的部分横着滚，滚动条藏掉（一条横杠压在标题条中间比它还抢眼），
+ *     改用滚轮、中键拖、两端箭头三条路（见 script 里的 onWheel / onStripDown / page）。
+ */
+.queue-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* .v-card 是一条 flex 竖排，不写死就会被正文压扁（同 touch.css 里 .v-tabs 那条） */
+    flex: 0 0 auto;
+    padding: 6px 12px;
 }
 
+.queue-strip {
+    /* offsetLeft 要相对这条算落点，得有个定位参照 */
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 8px;
+    min-width: 0;
+    /* 上下留 2px：胶囊的 hover 底色和 focus 圈都不至于贴着边被裁 */
+    padding: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* 滚到头别把滚动链传给弹窗正文，不然拖到边会突然整页往下跑 */
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.queue-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.queue-strip.is-panning {
+    cursor: grabbing;
+}
+
+/*
+ * 一条队列。原生 button 而不是 v-btn：v-btn 那套网格 + 不收缩的内容正是
+ * 上一版叠字的根源（见 script 顶部注释），这里只要一个能收缩的 flex 胶囊。
+ */
+.queue-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* 不换行也不平分：条数多了让容器滚，别把每条挤成只剩两个字 */
+    flex: 0 0 auto;
+    max-width: 260px;
+    height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(var(--v-theme-on-surface), .07);
+    color: rgba(var(--v-theme-on-surface), .78);
+    font-family: inherit;
+    font-size: .8125rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease;
+}
+
+.queue-tab:hover {
+    background: rgba(var(--v-theme-on-surface), .13);
+}
+
+/* 焦点圈画在内侧：贴着滚动容器的那两条边不会被裁掉一半 */
+.queue-tab:focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: -2px;
+}
+
+.queue-tab--active,
+.queue-tab--active:hover {
+    background: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
+}
+
+/* 名字可以让位，状态不能 —— 状态就是这一条为什么还在这儿的原因 */
 .queue-name {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -328,8 +624,21 @@ defineExpose({open: startBatch})
 
 .queue-state {
     flex: 0 0 auto;
-    margin-left: 8px;
     font-size: .7rem;
+}
+
+/*
+ * 选中那条是 primary 底：状态文字原来按 text-primary / text-info / text-error 上色，
+ * 在 primary 底上「待确认」正好是同色，等于看不见。这一个盖成 on-primary。
+ */
+.queue-tab--active .queue-state {
+    color: rgb(var(--v-theme-on-primary));
+    opacity: .85;
+}
+
+/* 箭头只在还有得翻的时候亮起来（disabled 掉的那颗留着占位，宽度不跳） */
+.queue-nav {
+    flex: 0 0 auto;
 }
 
 /* 编辑框上方那条：左边是这条订阅的名字，右边是「跳过这一条」 */
@@ -349,5 +658,12 @@ defineExpose({open: startBatch})
     display: grid;
     place-items: center;
     min-height: 300px;
+}
+
+/* 手指上没有滚轮也没有中键：胶囊给到 40px，横滑交给浏览器原生手势 */
+@media (max-width: 599.98px), (pointer: coarse) {
+    .queue-tab {
+        height: 40px;
+    }
 }
 </style>
