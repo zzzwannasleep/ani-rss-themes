@@ -1,11 +1,12 @@
 /**
- * 通知配置：10 种类型各自的字段表。
- * 字段名与 NotificationConfig（52 个字段）逐一对应，取自后端实体，不是猜的。
+ * 通知配置：11 种类型各自的字段表。
+ * 字段名与 NotificationConfig（57 个字段）逐一对应，取自后端实体，不是猜的。
+ * 第 11 种 ASTRBOT 是上游 3.2.58（62f613b）加的，字段跟着 3.2.59（f470cb9）补了图片开关。
  */
 import type {NotificationConfig} from '@shared/types'
 
 export type NType =
-    | 'TELEGRAM' | 'MAIL' | 'WEB_HOOK' | 'BARK' | 'SERVER_CHAN'
+    | 'TELEGRAM' | 'MAIL' | 'WEB_HOOK' | 'ASTRBOT' | 'BARK' | 'SERVER_CHAN'
     | 'SHELL' | 'SYSTEM' | 'FILE_MOVE' | 'EMBY_REFRESH' | 'OPEN_LIST_UPLOAD'
 
 export interface NField {
@@ -20,6 +21,7 @@ export const N_TYPES: {value: NType; title: string; icon: string}[] = [
     {value: 'TELEGRAM', title: 'Telegram', icon: 'mdi-send'},
     {value: 'MAIL', title: '邮件', icon: 'mdi-email-outline'},
     {value: 'WEB_HOOK', title: 'Webhook', icon: 'mdi-webhook'},
+    {value: 'ASTRBOT', title: 'AstrBot', icon: 'mdi-robot-outline'},
     {value: 'BARK', title: 'Bark', icon: 'mdi-bell-outline'},
     {value: 'SERVER_CHAN', title: 'Server 酱', icon: 'mdi-message-badge-outline'},
     {value: 'SHELL', title: 'Shell', icon: 'mdi-console'},
@@ -71,6 +73,17 @@ export const N_FIELDS: Record<NType, NField[]> = {
         ]},
         {key: 'webHookHeader', label: '请求头', type: 'textarea', hint: '一行一个，形如 Key: Value'},
         {key: 'webHookBody', label: '请求体', type: 'textarea', hint: '支持消息模版变量'},
+    ],
+    /*
+     * AstrBot（上游 3.2.58 / 3.2.59）。走它的 OpenAPI：地址 + 密钥 + 目标会话 UMO。
+     * 发图片要在 AstrBot 那边给这枚 Key 开 file 权限，否则只有文字过去 ——
+     * 这是后端的行为，提示写在这儿，省得人去翻源码。
+     */
+    ASTRBOT: [
+        {key: 'astrBotHost', label: '服务地址', type: 'text', hint: '形如 http://astrbot:6185'},
+        {key: 'astrBotApiKey', label: 'API Key', type: 'password', hint: 'abk_ 开头；要带封面图需在 AstrBot 侧开 file 权限'},
+        {key: 'astrBotUmo', label: '目标 UMO', type: 'text', hint: '在目标会话里发 /sid 获取'},
+        {key: 'astrBotImage', label: '附带封面图', type: 'switch'},
     ],
     BARK: [
         {key: 'barkServerUrl', label: '服务器地址', type: 'text'},

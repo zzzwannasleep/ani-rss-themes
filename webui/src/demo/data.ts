@@ -19,6 +19,24 @@ const WEEK = ['周一', '周二', '周三', '周四', '周五', '周六', '周�
 
 const SUBGROUPS = ['喵萌奶茶屋', '桜都字幕组', 'LoliHouse', 'Lilith-Raws', 'ANi', '北宇治字幕组']
 
+/*
+ * 三家的 RSS 地址各长各的样。形状抄的是上游「添加订阅」里那三个输入框的 placeholder。
+ *
+ * 原来三家共用一条 `https://example.invalid/rss/<把整个请求地址塞进去>/0`。
+ * 它的坏处不在难看：从这样一条地址解析出来的订阅，`url` 里没有 `bangumiId`，
+ * 于是「带着这条订阅去 Mikan 定位」那条路在演示产物上**根本走不到** ——
+ * 走不到就体检不到，和当初日志只有 5 条、滚都滚不起来是同一类事。
+ *
+ * 定义提到文件靠前来，是因为 makeAni 也要用它：订阅的 RSS 必须和番剧列表里那一组
+ * 长得一模一样，组名右边那颗「已订阅」在演示站上才有得看。留在后面会撞上
+ * `const` 的暂时性死区 —— ANI_LIST 在上面就已经 map 完了。
+ */
+const RSS_SHAPE: Record<string, (id: string, i: number) => string> = {
+    mikan: (id, i) => `https://mikanani.me/RSS/Bangumi?bangumiId=${id}&subgroupid=${100 + i}`,
+    anibt: (id, i) => `https://anibt.net/rss/anime.xml?bgmId=${id}&groupSlug=sg-${i}`,
+    garden: (id, i) => `https://api.animes.garden/feed.xml?subject=${id}&fansub=sg-${i}`,
+}
+
 /** 用种子派生一个稳定的伪随机数，免得每次刷新数据都在跳 */
 function rnd(seed: string, max: number): number {
     let h = 0
@@ -65,17 +83,22 @@ function makeAni(b: typeof BANGUMI[number], i: number): Ani {
            全塞进同一季的话那个下拉根本不会出现，等于没测到 */
         releaseDate: `${SEASONS[i % SEASONS.length]}-${String((i % 27) + 1).padStart(2, '0')}`,
         /* 主 RSS 地址。原来这个字段是空的，于是编辑订阅里那一栏在演示站永远是空白，
-           而它恰恰是这个表单最重要的一行 */
-        url: `https://example.invalid/rss?bangumiId=${b.id}`,
+           而它恰恰是这个表单最重要的一行。
+           现在用 Mikan 的真实形状，并且和 sourceGroups 生成的**第一个组**完全一致 ——
+           「组名右边那颗已订阅」在演示产物上才看得见，否则那条判定一次都走不到。 */
+        url: RSS_SHAPE.mikan(id, 0),
         // 摸鱼检测的开关，默认开 —— 它不是「已停更」，别拿它当状态用
         procrastinating: true,
         lastDownloadTime: Date.now() - idleDays * 864e5 - rnd(id + 'f', 20) * 3600_000,
         /* 「这几集不要下」。原来一条都没有，于是预览面板里的「禁止」标记、
            整行压暗、标题上那个「N 集不下载」全在演示产物上不出现 —— 量不到 */
         notDownload: i % 3 === 1 ? [2, 5] : [],
+        /* 备用 RSS：同样按各家真实形状生成，分别指向 AniBT 的第二个组和
+           AnimeGarden 的第三个组 —— 组级「已订阅」要把备用源也算进去，
+           演示站上得有一条能证明这件事。 */
         standbyRssList: i % 5 === 0
-            ? [{label: '桜都字幕组', url: 'https://example.invalid/rss?sub=sakurato', offset: 0},
-                {label: 'ANi', url: 'https://example.invalid/rss?sub=ani', offset: 0}]
+            ? [{label: '桜都字幕组', url: RSS_SHAPE.anibt(id, 1), offset: 0},
+                {label: 'ANi', url: RSS_SHAPE.garden(id, 2), offset: 0}]
             : [],
     } as unknown as Ani
 }
@@ -332,18 +355,8 @@ export function animeGardenList() {
 }
 
 /*
- * 三家的 RSS 地址各长各的样。形状抄的是上游「添加订阅」里那三个输入框的 placeholder。
- *
- * 原来三家共用一条 `https://example.invalid/rss/<把整个请求地址塞进去>/0`。
- * 它的坏处不在难看：从这样一条地址解析出来的订阅，`url` 里没有 `bangumiId`，
- * 于是「带着这条订阅去 Mikan 定位」那条路在演示产物上**根本走不到** ——
- * 走不到就体检不到，和当初日志只有 5 条、滚都滚不起来是同一类事。
+ * 三家的 RSS 地址形状见文件顶部的 RSS_SHAPE —— 搬到上面去了，理由写在那儿。
  */
-const RSS_SHAPE: Record<string, (id: string, i: number) => string> = {
-    mikan: (id, i) => `https://mikanani.me/RSS/Bangumi?bangumiId=${id}&subgroupid=${100 + i}`,
-    anibt: (id, i) => `https://anibt.net/rss/anime.xml?bgmId=${id}&groupSlug=sg-${i}`,
-    garden: (id, i) => `https://api.animes.garden/feed.xml?subject=${id}&fansub=sg-${i}`,
-}
 
 /** 字幕组列表。三家字段名不同，一次全给上，组件那边按名字取，多余的忽略 */
 export function sourceGroups(source: 'mikan' | 'anibt' | 'garden', key: string) {

@@ -422,6 +422,8 @@ export interface Config {
     deleteStandbyRSSOnly?: boolean
     /** 自动推断剧集偏移 */
     offset?: boolean
+    /** 自动偏移方式 */
+    offsetType?: OffsetTypeEnum
     /** 获取标题时带上年份 */
     titleYear?: boolean
     /** 自动禁用已完结番剧的订阅 */
@@ -808,6 +810,7 @@ export interface Login {
     username?: string
     /** 密码 */
     password?: string
+    isDefault?: boolean
 }
 
 /** Mikan —— mikan */
@@ -986,6 +989,14 @@ export interface NotificationConfig {
     barkUseMarkdown?: boolean
     barkLevel?: string
     barkVolume?: number
+    /** AstrBot 服务地址 */
+    astrBotHost?: string
+    /** AstrBot OpenAPI 密钥，发送图片时还需要 file 权限 */
+    astrBotApiKey?: string
+    /** AstrBot 目标会话的统一消息来源标识 */
+    astrBotUmo?: string
+    /** AstrBot 是否附带番剧封面 */
+    astrBotImage?: boolean
     /** 通知 状态 */
     statusList?: NotificationStatusEnum[]
     /** 顺序 */
@@ -1261,7 +1272,10 @@ export type BgmTokenTypeEnum = 'INPUT' | 'AUTO'
 export type NotificationStatusEnum = 'DOWNLOAD_START' | 'DOWNLOAD_END' | 'OMIT' | 'ERROR' | 'COMPLETED' | 'PROCRASTINATING'
 
 /** NotificationTypeEnum */
-export type NotificationTypeEnum = 'EMBY_REFRESH' | 'MAIL' | 'SERVER_CHAN' | 'SYSTEM' | 'TELEGRAM' | 'WEB_HOOK' | 'SHELL' | 'FILE_MOVE' | 'OPEN_LIST_UPLOAD' | 'BARK'
+export type NotificationTypeEnum = 'EMBY_REFRESH' | 'MAIL' | 'SERVER_CHAN' | 'SYSTEM' | 'TELEGRAM' | 'WEB_HOOK' | 'SHELL' | 'FILE_MOVE' | 'OPEN_LIST_UPLOAD' | 'BARK' | 'ASTRBOT'
+
+/** OffsetTypeEnum */
+export type OffsetTypeEnum = 'AUTO_OFFSET' | 'BGM_OFFSET'
 
 /** ServerChanTypeEnum */
 export type ServerChanTypeEnum = 'SERVER_CHAN' | 'SERVER_CHAN_3'

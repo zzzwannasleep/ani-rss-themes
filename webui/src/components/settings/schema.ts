@@ -213,6 +213,16 @@ export const BASIC_SECTIONS: SectionDef[] = [
             {key: 'downloadNew', label: '只下载最新集', type: 'switch'},
             {key: 'titleYear', label: '标题带年份', type: 'switch'},
             {key: 'offset', label: '自动推断剧集偏移', type: 'switch'},
+            /*
+             * 上游 3.2.56（598c689）把「自动偏移」拆成两种算法：
+             * AutoOffset 本地按 RSS 最小集数对齐，BgmOffset 跟随 Bangumi 条目的放送日期。
+             * 默认 AUTO_OFFSET —— 就是拆之前那套行为，老后端上没有这个键，读出来是空，
+             * 控件显示为空但不会写坏什么（保存时原样传回，不认识的字段那边忽略）。
+             */
+            {key: 'offsetType', label: '自动偏移方式', type: 'select', items: [
+                {title: 'AutoOffset（按 RSS 集数本地对齐）', value: 'AUTO_OFFSET'},
+                {title: 'BgmOffset（跟随 Bangumi 放送）', value: 'BGM_OFFSET'},
+            ], disabledWhen: c => !c.offset, hint: '3.2.56 起；关掉「自动推断剧集偏移」后这一项不生效'},
             {key: 'bgmJpName', label: 'BGM 日语标题', type: 'switch'},
             {key: 'tmdbId', label: '标题带 tmdbId', type: 'switch'},
             {key: 'tmdbIdPlexMode', label: 'Plex 命名方式', type: 'switch', disabledWhen: c => !c.tmdbId},

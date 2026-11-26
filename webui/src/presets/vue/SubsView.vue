@@ -283,8 +283,12 @@ function openBgm(a: Ani) {
     display: flex;
     flex: 0 0 auto;
     /* 图标按钮之间留缝：不留的话四颗 32px 的圆热区严丝合缝并排，
-       看着是一条长条不是四颗按钮（test:mobile 里那条「按钮贴在一起」查的就是这个） */
-    gap: 4px;
+       看着是一条长条不是四颗按钮（test:mobile 里那条「按钮贴在一起」查的就是这个）。
+       **8px 不是随手写的**：`test:layout` 的判据是「同一行相邻两颗 .v-btn 不足 8px 就报」，
+       8px 是 M3 的最小档、也是 v-card-actions 自带的 gap。原来写 4px，
+       那条判据每次跑都红一片（28 处，全挂在 .actions 上）—— 门限和实现各写各的，
+       而「全绿」和「规则写废了」在输出上长得一模一样，所以对齐到门限这一侧。 */
+    gap: 8px;
     opacity: 0;
     transition: opacity var(--m-dur) var(--m-ease);
 }

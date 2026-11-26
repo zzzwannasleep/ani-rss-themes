@@ -64,7 +64,9 @@ const typeIcon = (t?: string) => N_TYPES.find(x => x.value === t)?.icon || 'mdi-
     <v-empty-state v-if="!list().length" icon="mdi-bell-off-outline" text="添加一个渠道后，下载事件才会通知你"
                    title="还没有通知渠道"/>
 
-    <v-card v-for="(n, i) in list()" :key="i" class="mb-2" variant="tonal">
+    <!-- 停用的渠道整张压暗一点（上游 3.2.60 `e1164cb` 的通知管理页也这么做）：
+         一眼能扫出「哪几条其实没在发」，不用逐条去读右下角那颗开关 -->
+    <v-card v-for="(n, i) in list()" :key="i" :class="{'n-off': !n.enable}" class="mb-2" variant="tonal">
       <v-card-text class="d-flex align-center ga-3 py-3">
         <v-avatar :color="n.enable ? 'primary' : undefined" size="36" variant="tonal">
           <v-icon>{{ typeIcon(n.notificationType) }}</v-icon>
@@ -93,5 +95,10 @@ const typeIcon = (t?: string) => N_TYPES.find(x => x.value === t)?.icon || 'mdi-
 /* 让中间那块能被 text-truncate 压缩，否则长备注会把开关挤出卡片 */
 .min-w-0 {
     min-width: 0;
+}
+
+/* 停用的那条：整张压暗，但按钮仍然可点（不然连「启用」都点不动） */
+.n-off {
+    opacity: .62;
 }
 </style>

@@ -240,7 +240,14 @@ pnpm run build:all -- --demo    # 十一款演示构建（假数据，Pages 预�
 pnpm test                       # 主题 / 接口地址 / 外部播放器的断言
 pnpm run test:mobile            # 手机宽度版式体检，要先有 --demo 产物
 pnpm run test:dialogs           # 添加订阅那条链路的行为体检，十一款轮流跑，同样要先有 --demo 产物
+pnpm run test:layout            # 弹窗/页面的裁剪与按钮间距体检，也要先有 --demo 产物
 ```
+
+`test:layout` 的尺子和 `test:mobile` 不是同一把：那一份拿视口量，这一份拿「最近一个会裁剪的祖先」量，
+另外还查同一行相邻两颗按钮之间有没有 8px 缝。**这两份的门限是分开写的**
+（mobile 认 4px、layout 认 8px，8px 是 M3 的最小档），所以按钮间距只能往 8px 上靠 ——
+vue 那款的订阅行 `.actions` 原来写 4px，过了 mobile、每次 layout 必红 28 处，现在对齐到 8。
+判据细节见 [`webui/shared/tools/README.md`](webui/shared/tools/README.md)。
 
 `test:mobile` 用无头 Chrome/Edge 跑十一款 × 360/390/414 × 13 条路由，
 只认可判定的事实：整页横向滚动、元素伸出视口、可点元素不足 36px、
@@ -348,15 +355,17 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 
 后端 71 个接口（24 个 controller）全部封装，界面侧对齐上游 70 个 `.vue`：
 
-- 登录、Bangumi OAuth 回调
+- 登录、Bangumi OAuth 回调；还在用出厂账号密码时登录后提醒一次（上游 3.2.62 的 `isDefault`）
 - 订阅：列表（海报/表格、按星期分组、拼音与首字母搜索）、增删改、批量启用/禁用/刮削/更新总集数
 - 添加订阅五个来源：RSS 地址、Bangumi 搜索、Mikan、AniBT、AnimeGarden —— **全部汇进同一个「确认订阅信息」队列**
   （见下面「添加入口只有一个」）
+- 番剧列表里每个字幕组的组名右边标「已订阅」——**主 RSS 与备用 RSS 都算**，悬停额外给出是哪条订阅。
+  URL 先归一（去尾斜杠、scheme/host 小写），否则同一个组会因为两边的写法差一个斜杠而漏判
 - 订阅编辑四个标签页（基本 / 备用 RSS / 自定义 / 其它），含自定义集数规则、路径、上传、完结迁移、重命名模版、标签、优先保留
 - 预览匹配结果（含遗漏集数推断）、合集下载、导入订阅、封面重抓、Bangumi 评分、视频列表
 - 下载器任务（可见时轮询，3 秒）、删除任务
 - 日志（可见时轮询、时间/级别/类名列、级别与类名多选过滤、跟随最新、下载、清空）
-- 设置 8 个标签页 / 基本设置 9 个折叠面板 / 通知 10 种类型，共 121 个配置字段
+- 设置 8 个标签页 / 基本设置 9 个折叠面板 / 通知 11 种类型（含 AstrBot）
 - 备份导入导出、缓存清理、检查更新、重启与停止服务
 
 ### 播放
@@ -385,7 +394,7 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 
 ## 类型是生成的，不是手抄的
 
-`webui/shared/types.ts`（79 个 interface / 11 个枚举）由 `webui/shared/tools/gen-types.mjs`
+`webui/shared/types.ts`（77 个 interface / 11 个枚举）由 `webui/shared/tools/gen-types.mjs`
 从上游 Java 实体直接抽取，带字段数自校验：生成结果和源码里的 `private` 字段数对不上就直接失败。
 
 这么做是因为 `Config` 有 121 个字段、`Ani` 55 个、`NotificationConfig` 52 个 —— 手抄必错。
@@ -394,7 +403,35 @@ github 那款没有总览，落地页本来就是订阅列表。从自带界面�
 
 上游改了字段就重跑一次生成器，diff 即本次接口变更。用法见 [`webui/shared/tools/README.md`](webui/shared/tools/README.md)。
 
-最近一次重跑对的是上游 `c5ca167`（**3.2.52**），接口面 diff 出六处 —— 这一轮上游的
+最近一次重跑对的是上游 `0444b79`（**3.2.63**，2026-11-22），接口面 diff 出四处，端点数没动（还是 71）：
+
+- **`Config.offsetType` + `OffsetTypeEnum`**（3.2.56 `598c689`「新增自动偏移类型，可跟随 Bangumi 自动偏移」）。
+  原来只有一个是非题（`Config.offset`），现在拆成两套算法：`AUTO_OFFSET` 按 RSS 最小集数本地对齐，
+  `BGM_OFFSET` 跟着 Bangumi 条目的放送日期算。设置页「添加订阅」里多一格下拉，
+  挂在「自动推断剧集偏移」下面并跟着它置灰 —— 总开关关着的时候选哪种算法没有意义。
+  老后端上没有这个键，读出来是 `undefined`，控件显示为空，保存时原样传回，那边忽略。
+- **AstrBot 通知**（3.2.58 `62f613b`「增加 AstrBot 通知」+ 3.2.59 `f470cb9`「支持发送图片」）。
+  `NotificationTypeEnum` 多一个 `ASTRBOT`，`NotificationConfig` 多四个字段：
+  `astrBotHost` / `astrBotApiKey` / `astrBotUmo` / `astrBotImage`。
+  走它的 OpenAPI，发图片要在 AstrBot 那边给这枚 Key 开 `file` 权限（否则只有文字过去，那是后端的行为）。
+  通知页从 10 种类型变成 11 种，字段表在 `notificationSchema.ts`，和其余十种同一套渲染器。
+- **`Login.isDefault`**（3.2.62 `4332062`「增加修改默认登录信息提示」）。后端拿它标记
+  「用户名密码还是出厂那组」。上游是在主壳里弹一次对话框、可以「不再提醒」；
+  我们那处写在 `components/common/DefaultLoginNotice.vue`，挂在 `App.vue` 上 —— 十一款外壳各写一遍不合适。
+  「不再提醒」**沿用上游的 localStorage 键**（`hide-default-login-reminder`），
+  两套界面切着用，关过一次就是关过。设置页保存后 `isDefault` 变 false、`config` 重拉，对话框自己消失。
+  老后端没这个字段，`undefined === true` 不成立，一次都不弹 —— 3.2.5x 上的用户不会每次登录被拦一下。
+- **AnimeGarden 封面接口换了图床**（3.2.58 `47e160d`）：后端不再从 `bgmCover` 缓存里取，
+  直接拼 `https://bgm.animes.garden/bangumi/subject/{id}/poster.jpeg?quality=small`。
+  我们这边的 `posterUrl()` 只处理「宽高都给了」的方框裁剪参数（Mikan 那种），新地址带的是
+  `quality=small`，原样交给 `api/proxyImage` —— 不用改，但记一笔免得下次有人以为漏了。
+
+同一区间里其余几条是纯后端（3.2.53 MCP 支持编辑删除订阅、3.2.55 `BGM 日期解析`、
+3.2.54 `优化重命名`、3.2.57 `优化偏移`、3.2.60 安装脚本、3.2.61 播放器懒加载），
+界面侧没有要跟的接口。上游 3.2.61 把自带播放器改成动态 `import()` 以缩小首屏包体 ——
+我们走的是 webplayer（独立的静态站，`#/play` 整屏 iframe），这条路本来就不背它的包。
+
+上一轮（`c5ca167`，**3.2.52**）接口面 diff 出六处 —— 那一轮上游的
 WebUI 交互改动很大，接口面的变化多半是那些改动的下游：
 
 - **`addAni` 多了 `override` 参数**（3.2.48 `9000616`）。以前「重名怎么办」是设置里一个全局开关

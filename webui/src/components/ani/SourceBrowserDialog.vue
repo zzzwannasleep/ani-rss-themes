@@ -10,6 +10,7 @@ import * as api from '@shared/api'
 import {posterUrl, proxyImage} from '@shared/http'
 import {formatSize, formatTime, fromNow} from '@shared/format'
 import {useUiStore} from '@/stores/ui'
+import {useAniStore} from '@/stores/ani'
 import type {PickedGroup} from './batch'
 
 /**
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 }>()
 
 const ui = useUiStore()
+const aniStore = useAniStore()
 const {mobile} = useDisplay()
 
 /* ── 归一后的模型 ── */
@@ -174,6 +176,52 @@ function locate(ani: Ani | undefined, source: 'mikan' | 'anibt' | 'garden'): {te
 
 /** 本次打开的定位条件，fetchList 要用 */
 const pin = ref<{text: string; bgmUrl: string}>({text: '', bgmUrl: ''})
+
+/* ── 已订阅 ── */
+
+/**
+ * RSS 地址归一。
+ *
+ * Mikan 的订阅地址带 `?bangumiId=…&subgroupid=…`，同一个组在「列表接口给的」和「订阅里存的」
+ * 两条路上可能一个带尾斜杠、一个不带；host 大小写也各写各的。不归一的话标记会时有时无 ——
+ * 那种「有时候显示」的 bug 最难让人相信，用户会以为功能坏了。
+ *
+ * 只小写 scheme + host：路径和 query 是有大小写意义的，不能一起往下压。
+ */
+function normRss(url?: string): string {
+  const raw = (url || '').trim()
+  if (!raw) return ''
+  try {
+    const u = new URL(raw)
+    return `${u.protocol}//${u.host.toLowerCase()}${u.pathname.replace(/\/+$/, '')}${u.search}`
+  } catch {
+    // 不是合法地址就原样比，总比直接当成「没订过」强
+    return raw.replace(/\/+$/, '')
+  }
+}
+
+/**
+ * 已经订过的字幕组 → 那条订阅的标题。
+ *
+ * **主 RSS 和备用 RSS 都算。** 同一部番挑好几个组时，第二个及以后的组是进
+ * `standbyRssList` 的（见 AniBatchDialog 的合成逻辑），只比 `url` 的话这些组永远是
+ * 「没订过」：界面上写着「添加」，后端入库时却判「订阅标题重复」，人还得回列表里
+ * 一条条翻是哪一部。这一列存在的全部意义就是省掉那次翻找。
+ */
+const subscribedRss = computed(() => {
+  const map = new Map<string, string>()
+  for (const a of aniStore.all) {
+    const name = a.title || a.mikanTitle || '已订阅'
+    if (a.url) map.set(normRss(a.url), name)
+    for (const s of a.standbyRssList ?? []) {
+      if (s.url) map.set(normRss(s.url), name)
+    }
+  }
+  return map
+})
+
+/** 这个组已订阅就返回订阅标题（给悬停提示用），没订返回空串 */
+const subscribedBy = (g: Group) => subscribedRss.value.get(normRss(g.rss)) || ''
 
 /* ── 三家的适配 ── */
 
@@ -408,6 +456,15 @@ function dropList() {
 watch(model, v => {
   if (!v) return
   basket.value = []
+  /*
+   * 订阅列表要在这儿补拉一次。
+   * 「组名右边那颗已订阅」读的是 ani store —— 从总览页/列表页点进来时它早就加载好了，
+   * 但直接刷在「添加订阅」上（或者刚登录）时 store 还是空的，标记会一片空白，
+   * 看上去就像谁都没订过。失败不拦路：这只影响一个角标，别把整个列表卡住。
+   */
+  if (!aniStore.raw.weekList && !aniStore.loading) {
+    void aniStore.reload().catch(() => undefined)
+  }
   if (loadedSource.value && loadedSource.value !== props.source) dropList()
   const next = locate(props.preset, props.source)
   const changed = next.text !== pin.value.text || next.bgmUrl !== pin.value.bgmUrl
@@ -546,13 +603,22 @@ function search() {
                     <v-checkbox-btn :model-value="inBasket(g)" density="compact"
                                     @update:model-value="toggleBasket(it, g)"/>
                     <div class="group-meta">
-                      <div class="group-name">{{ g.label }}</div>
+                      <!-- 已订阅就挂在组名右边：挑组的时候要的就是「这一部、这个组，我订过没有」 -->
+                      <div class="group-title">
+                        <span class="group-name">{{ g.label }}</span>
+                        <v-chip
+                            v-if="subscribedBy(g)" class="group-flag" color="success" size="x-small"
+                            :title="`已订阅：${subscribedBy(g)}`" variant="tonal">
+                          已订阅
+                        </v-chip>
+                      </div>
                       <div v-if="g.sub" class="group-sub">{{ g.sub }}</div>
                       <div v-if="g.tags?.length" class="group-tags">
                         <v-chip v-for="t in g.tags" :key="t" size="x-small" variant="tonal">{{ t }}</v-chip>
                       </div>
                     </div>
                     <v-btn color="primary" prepend-icon="mdi-plus" size="small" variant="tonal"
+                           :title="subscribedBy(g) ? `这个组已经在订阅「${subscribedBy(g)}」里，再添加会撞名` : '添加这条订阅'"
                            @click="openMatch(it, g)">
                       添加
                     </v-btn>
@@ -843,12 +909,30 @@ function search() {
     min-width: 0;
 }
 
+/*
+ * 组名这一行：名字可以被压窄到省略号，右边那颗「已订阅」不许被挤掉。
+ * flex 项默认 min-width:auto，不给 0 的话长组名会把角标顶出可视区，
+ * 而那正好是「订没订过」要看的那一格。
+ */
+.group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
 .group-name {
+    flex: 0 1 auto;
+    min-width: 0;
     font-size: 13px;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.group-flag {
+    flex: 0 0 auto;
 }
 
 .group-sub {

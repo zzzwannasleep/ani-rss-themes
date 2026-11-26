@@ -8,6 +8,7 @@ import {useUiStore} from '@/stores/ui'
 import {useThemeManager} from '@/composables/useThemeManager'
 import {useCustomAssets} from '@/composables/useCustomAssets'
 import SnackbarHost from '@/components/common/SnackbarHost.vue'
+import DefaultLoginNotice from '@/components/common/DefaultLoginNotice.vue'
 
 /** 演示构建才有的角标，正式产物里这个常量是 false，整块被摇掉 */
 const isDemo = __DEMO__
@@ -51,6 +52,8 @@ setUnauthorizedHandler(() => {
   <v-app>
     <router-view/>
     <SnackbarHost/>
+    <!-- 上游 3.2.62 的 isDefault：还在用出厂账号密码就提醒一次，十一款共用这一处 -->
+    <DefaultLoginNotice/>
 
     <!-- 演示站：数据是假的，写操作不会真的执行，得说清楚 -->
     <v-chip v-if="isDemo" class="demo-badge" color="warning" size="small" variant="flat">

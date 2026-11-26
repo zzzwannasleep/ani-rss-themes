@@ -507,6 +507,34 @@ async function checkPreset(id) {
         }
         const left = await ev(`window.__vis('.queue-tab').length`, 0)
         if (left) bad.push(`覆盖之后队列里还剩 ${left} 条 —— 加成功的那条该从队列里消失`)
+
+        /* ══ 场景六：组名右边的「已订阅」 ══
+         *
+         * 演示数据里订阅的主 RSS 就是 Mikan 第一个组的地址、备用 RSS 指向 AniBT 的第二个组
+         * （见 src/demo/data.ts 的 makeAni）。所以这一条同时量两件事：
+         * 标记出得来，以及**备用源也算已订阅** —— 只比 `Ani.url` 的实现会漏掉后者，
+         * 而人眼看到的就是「明明订过，这儿偏说没订」。
+         */
+        await open()
+        note('▶ 场景六：Mikan 第一个组 / AniBT 第二个组 → 组名右边要有「已订阅」')
+        await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
+        await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
+        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+
+        const flagMain = await ev(`(window.__vis('.group-flag')[0]?.textContent || '').trim()`, 0)
+        if (flagMain !== '已订阅') bad.push('已经订过的那个组，组名右边没有「已订阅」')
+        const flagTitle = await ev(`window.__vis('.group-flag')[0]?.getAttribute('title') || ''`, 0)
+        if (!flagTitle.includes('已订阅')) bad.push('「已订阅」没带上是哪条订阅 —— 悬停提示是空的')
+        await esc()
+
+        await step('重新打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
+        await step('切到 AniBT 一栏', `window.__click('.v-tab', 'AniBT')`, 900)
+        await step('浏览 AniBT 番剧列表', `window.__click('button.browse', 'AniBT')`, 3000)
+        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        const flagStandby = await ev(
+            `window.__vis('.group-flag').filter(e => e.textContent.trim() === '已订阅').length`, 0)
+        if (!flagStandby) bad.push('备用 RSS 里的那个组没被算成「已订阅」—— 只比了主 RSS？')
+        await esc()
     } catch (e) {
         bad.push('脚本没走通：' + e.message)
     }
@@ -528,7 +556,8 @@ console.log('')
 if (broken) console.error(`添加订阅体检不通过：${broken} / ${PRESETS.length} 款有问题`)
 else console.log(`✓ ${PRESETS.length} 款全部通过：换来源之后没有一样东西是上一家的，`
     + `挑回来的东西只进队列、漏不到手填那一栏，队列里能预览，三家番剧列表收到的定位条件没串，`
-    + `同一部番勾多个组会合成一条并带上备用 RSS，撞名时问一次、覆盖才带 override`)
+    + `同一部番勾多个组会合成一条并带上备用 RSS，撞名时问一次、覆盖才带 override，`
+    + `已经订过的组右边有「已订阅」（备用源也算）`)
 
 ws.close(); proc.kill(); server.close()
 process.exit(broken ? 1 : 0)
