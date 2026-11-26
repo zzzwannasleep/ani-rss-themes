@@ -55,6 +55,33 @@ pnpm -C webui run test:preview
 不过就把第一屏各块的高度摊开打出来（连一张卡的标题栏 / 缩略图 / 文字三段），
 省得下一个人自己去开 DevTools 找是谁变高了。加第十款界面时最先响的就是它。
 
+## theme-selector-audit.mjs
+
+`legacy/themes/*.css` 的选择器体检，跟 `preview-fit` 不是一回事：那个量预览页版式，这个量
+**主题还挂不挂得上 ani-rss 的 DOM**。
+
+```bash
+pnpm -C webui run audit:themes
+```
+
+主题靠类名挂到上游界面上，上游一改版类名就没了 —— 主题不会报错，只是静悄悄不生效，
+表现是「装上了，但只有按钮颜色变了，卡片和顶栏一点没动」。这个脚本把「主题里用到、上游
+已经没有」的类名列出来，退出码非 0。
+
+这次就是被它抓到的：上游把主界面从「顶部工具栏 + 一行一条的列表卡」换成「左侧导航 + 海报墙」，
+`.list-card-image` / `.list-card-score` / `#header` 在现行界面上一条都不存在了，19 份主题合计
+几十处引用全成了死代码。改完再跑，输出 `✓ 主题里用到的类名，上游全都还在`。
+
+判分要点，踩过才知道：
+
+- 只从**规则头**（`}` 切开、取最后一个 `{` 之前那段）取类名。整份文本抓 `.xxx` 会把
+  `url(https://lain.bgm.tv/…)` 里的 `.tv`、`.woff2` 这种域名后缀当成选择器
+- `autobangumi.css` 是照 Auto_Bangumi 的界面写的（`.ab-ui` / `.sidebar` / `.topbar`），
+  目标不是 ani-rss 的 DOM，按同一把尺子量会刷出上百条假阳性 —— 那份文件单独放行
+- `md-*` 是 `material-motion.js` 运行时加的，上游源码里当然没有
+
+要跑它得先有上游源码（`gen-types` 那次 clone 下来的 `shared/tools/upstream`）。
+
 ## mobile-audit.mjs
 
 手机宽度下的版式体检，跑的是构建产物不是源码。

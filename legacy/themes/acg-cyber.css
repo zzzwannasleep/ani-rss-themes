@@ -184,24 +184,24 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(0, 229, 255, .12);
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 6px !important;
     border-color: rgba(0, 229, 255, .35) !important;
     box-shadow: 0 0 22px -12px rgba(0, 229, 255, .8) !important;
 }
 
-.list-card-title {
+.cover-title {
     text-shadow: 0 1px 10px rgba(0, 0, 0, .6);
 }
 
-.list-card-score {
-    color: var(--ani-magenta) !important;
+.cover-score {
+    background-color: var(--ani-magenta) !important;
     text-shadow: 0 0 16px rgba(255, 61, 216, .7) !important;
 }
 

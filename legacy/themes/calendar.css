@@ -157,9 +157,9 @@ html .el-collapse-item__header {
 html .el-tag,
 html .el-input-number .el-input__inner,
 html .el-descriptions__content,
-html .list-card-score,
+html .cover-score,
 html .el-badge__content,
-html .logs-dialog {
+html .logs-page {
     font-variant-numeric: tabular-nums;
 }
 
@@ -420,8 +420,8 @@ html .el-link {
 }
 
 /* 评分：挂历上那个大号日期数字 */
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     font-family: var(--ani-num) !important;
     font-weight: 700 !important;
     letter-spacing: .02em !important;
@@ -429,14 +429,14 @@ html .el-link {
 }
 
 /* 封面：方角照片，压一层暖调 */
-.list-card-image {
+.cover-image {
     border-radius: 2px !important;
     border-color: var(--el-border-color-dark) !important;
     filter: sepia(.12) saturate(.94);
     transition: filter .2s ease;
 }
 
-.list-card-image:hover {
+.cover-image:hover {
     filter: none;
 }
 
@@ -509,17 +509,17 @@ html .el-link {
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下。
    同时去掉红上沿 —— 每张卡三个纯图标按钮，都顶一道红会满屏发红点 */
 /* 第二个选择器不是冗余：上面那条通用按钮规则是 (0,3,1)，
-   单写 .list-card-actions .el-button 只有 (0,2,1)，压不住红上沿 */
-html .list-card-actions .el-button,
-html .list-card-actions .el-button.is-text.is-has-bg {
+   单写 .cover-actions .el-button 只有 (0,2,1)，压不住红上沿 */
+html .cover-actions .el-button,
+html .cover-actions .el-button.is-text.is-has-bg {
     padding-left: 8px;
     padding-right: 8px;
     border-top-width: 1px;
     border-top-color: var(--el-border-color-dark);
 }
 
-html .list-card-actions .el-button:hover,
-html .list-card-actions .el-button.is-text.is-has-bg:hover {
+html .cover-actions .el-button:hover,
+html .cover-actions .el-button.is-text.is-has-bg:hover {
     border-top-color: var(--el-color-primary);
 }
 

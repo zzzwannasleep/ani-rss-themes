@@ -142,9 +142,11 @@ https://zzzwannasleep.github.io/ani-rss-themes/
 
 右上角一键复制：GitHub 链接 / githack 链接 / CSS 全文。配了 JS 的主题会多出一个金色按钮（点一下拿 `import(…)` 一行，再点一下拿 JS 全文）。
 
-**用的是真东西，不是截图也不是仿写：** Element Plus 样式表和 ani-rss 实际引用的是同一份；ani-rss 自己那层样式从上游热链，跟着它更新；DOM 结构、类名、图标 1:1 复刻；弹窗、下拉、标签页走 Element Plus 真实过渡；番剧数据取自 [Bangumi 每日放送](https://api.bgm.tv/calendar)。
+**用的是真东西，不是截图也不是仿写：** Element Plus 样式表和 ani-rss 实际引用的是同一份；ani-rss 自己那层样式从上游热链（`ani-rss-ui/src/css/style.css` + `ext.css`），跟着它更新；DOM 结构、类名、图标照上游**当前**的界面复刻 —— 左侧 132px 导航栏、页头、海报墙订阅卡、底部 tab 栏，都是改版后那一套；弹窗、下拉、标签页走 Element Plus 真实过渡；番剧数据取自 [Bangumi 每日放送](https://api.bgm.tv/calendar)。
 
-**它是能操作的**，上游 28 个弹窗全部复刻：登录页、首页、添加/修改订阅、管理、日志、下载、设置八个标签页、Bangumi 授权、播放列表、正则测试、批量操作等。「页面设置」里的控件真的生效 —— 切明暗、取色器改强调色、最大宽度改布局、四个复选框真的控制评分/星期/视频列表/更新时间的显隐。
+> 上游 3.2.58 前后把自带界面从「顶部工具栏 + 一行一条的列表卡」换成了「左侧导航 + 海报墙」。主题是照 DOM 写选择器的，界面一换，`.list-card-image` / `#header` 这些就全挂不上去了 —— 预览页和 19 份主题都已按新类名（`.cover-image`、`.app-nav` …）重接。`pnpm -C webui run audit:themes` 用来盯这件事：上游再改版、有类名消失，它会把清单列出来。
+
+**它是能操作的**，上游 27 个弹窗全部复刻：登录页、订阅页、添加/修改订阅、管理、下载、设置八个标签页、Bangumi 授权、播放列表、正则测试、批量操作等。日志**不是弹窗了** —— 上游 3.2.6x 把它做成独立页面，预览里也照做：左侧栏点「日志」就切过去，四列（时间/级别/来源/内容）加两个多选筛选。「页面设置」里的控件真的生效 —— 切明暗、取色器改强调色、最大宽度改布局、四个复选框真的控制评分/星期/视频列表/更新时间的显隐。
 
 本地跑：
 
@@ -152,6 +154,13 @@ https://zzzwannasleep.github.io/ani-rss-themes/
 git clone https://github.com/zzzwannasleep/ani-rss-themes.git
 cd ani-rss-themes && python -m http.server 8080
 ```
+
+站点根是 `legacy/`，本地打开 **http://localhost:8080/legacy/**（线上 Pages 把它铺在 `/`，所以线上不用带这层）。
+改完主题直接刷页面就行；改的是 `legacy/preview/*` 这类预览逻辑，同样不用构建。
+
+`legacy/` 底下少两样东西 —— `favicon.ico` 在，但 `webui/` 那层要走另一条路：
+在仓库根跑 `pnpm -C webui run build:all -- --demo`，再把 `legacy/` 铺成站点根、
+11 份产物放进 `webui/`，就是线上那套站点了。`--demo` 不能漏，漏了构建出来要真后端登录才进得去。
 
 所有内容为演示数据，页面不连接任何 ani-rss 实例。目录构成与许可证见 [preview/NOTICE.md](preview/NOTICE.md)。
 </details>

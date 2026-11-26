@@ -128,7 +128,7 @@ html * {
 html h1, html h2, html h3, html h4,
 html .el-dialog__title,
 html .el-collapse-item__header,
-html .list-card-title,
+html .cover-title,
 html .list-week-title,
 html .title-h2 {
     font-family: var(--ani-serif);
@@ -145,7 +145,7 @@ html .el-collapse-item__header {
 }
 
 /* 数字对齐，列表看着才齐整 */
-html .el-tag, html .el-descriptions__content, html .list-card-score {
+html .el-tag, html .el-descriptions__content, html .cover-score {
     font-variant-numeric: tabular-nums;
 }
 
@@ -409,13 +409,13 @@ html .el-tag {
 }
 
 /* 评分：项目里写死的品红换成墨色，用衬线摆出刊物感 */
-.list-card-score {
-    color: var(--el-text-color-primary) !important;
+.cover-score {
+    background-color: var(--el-text-color-primary) !important;
     font-family: var(--ani-serif) !important;
     font-weight: 600 !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 2px !important;
     border-color: var(--el-border-color) !important;
 }

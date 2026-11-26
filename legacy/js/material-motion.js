@@ -37,7 +37,7 @@
         '.list-week-title',
     ].join(',')
 
-    const HEADER_SEL = '#header'          // M3 top app bar，见 ani-rss 的 Header.vue
+    const HEADER_SEL = '.app-nav'          // M3 顶栏 ↔ 现在的左侧导航栏（见 ani-rss 的 MainLayoutView.vue）
     const CARD_SEL = '.grid-container .el-card'   // 只给首页订阅卡片做入场，弹窗里的不碰
 
     const STAGGER = 40                    // 同一批卡片的错峰间隔（ms）

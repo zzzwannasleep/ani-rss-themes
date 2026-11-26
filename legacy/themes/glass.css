@@ -429,18 +429,18 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     font-weight: 300 !important;
     letter-spacing: .06em !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 10px !important;
     box-shadow: 0 8px 20px -12px rgba(0, 0, 0, .5) !important;
 }

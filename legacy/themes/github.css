@@ -159,11 +159,11 @@ html * {
 
 /* GitHub 上凡是「值」都是等宽：编号、体积、评分、日志、URL */
 html .el-tag,
-html .list-card-score,
-html .list-card-url,
+html .cover-score,
+html .cover-subgroup,
 html .el-input-number .el-input__inner,
 html .el-descriptions__content,
-html .logs-dialog,
+html .logs-page,
 html code, html kbd, html pre, html samp {
     font-family: var(--ani-mono);
     font-variant-numeric: tabular-nums;
@@ -444,14 +444,14 @@ html .el-alert {
 }
 
 /* 评分：项目里写死的品红换成 GitHub 蓝，等宽对齐 */
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     font-family: var(--ani-mono) !important;
     font-weight: 600 !important;
     font-variant-numeric: tabular-nums !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 6px !important;
     border-color: var(--el-border-color) !important;
 }
@@ -517,11 +517,11 @@ html .list-week-title {
    选择器得把上面那几条按钮规则的类名原样带上再加一层。上游的按钮几乎都带
    `is-text is-has-bg`，这份主题给它们上色的是 `html .el-button.is-text.is-has-bg`
    （0-3-1），危险色那条更是 `html .el-button--danger.is-text:not(.is-disabled).is-has-bg`
-   （0-5-1）。只写 `html .list-card-actions .el-button`（0-2-1）连底色都改不动 ——
+   （0-5-1）。只写 `html .cover-actions .el-button`（0-2-1）连底色都改不动 ——
    尺寸会生效、颜色纹丝不动，是那种「改了一半」最难查的样子。 */
-html .list-card-actions .el-button,
-html .list-card-actions .el-button.is-text.is-has-bg,
-html .list-card-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg {
+html .cover-actions .el-button,
+html .cover-actions .el-button.is-text.is-has-bg,
+html .cover-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg {
     width: 28px;
     min-width: 28px;
     height: 28px;
@@ -532,8 +532,8 @@ html .list-card-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg {
     color: var(--el-text-color-secondary);
 }
 
-html .list-card-actions .el-button.is-text.is-has-bg:hover,
-html .list-card-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg:hover {
+html .cover-actions .el-button.is-text.is-has-bg:hover,
+html .cover-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg:hover {
     background-color: var(--el-fill-color);
     border-color: transparent;
     box-shadow: none;
@@ -541,7 +541,7 @@ html .list-card-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg:h
 
 /* 删除键平时和其它两颗一样是中性灰，hover 才转成 Primer 的危险红 ——
    GitHub 的删除也是这个节奏，不到 hover 不喊。 */
-html .list-card-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg:hover {
+html .cover-actions .el-button--danger.is-text:not(.is-disabled).is-has-bg:hover {
     color: var(--el-color-danger);
 }
 

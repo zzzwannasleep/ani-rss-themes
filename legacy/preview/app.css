@@ -5,6 +5,10 @@
  * ani-rss 本体为 GPL-2.0，这里没有复制其代码，按同样的布局数值重写。
  * 真实实现以上游为准：https://github.com/wushuo894/ani-rss
  *
+ * 哪些东西必须写在这里：上游把它写在 .vue 的 scoped style 里（热链 style.css 拿不到），
+ * 或者上游压根没写 CSS、只靠 el- 的默认样式排布。改这里之前先去翻对应的 .vue，
+ * 数值照抄、别自己发挥 —— 预览和真界面差 2px，主题作者就会照着错的去调。
+ *
  * 主题文件在本文件之后加载，所以主题可以覆盖这里的一切。
  */
 
@@ -17,152 +21,483 @@ html, body, #app {
     margin: 0 auto;
 }
 
-/* ---------- 主容器（对应 home/App.vue） ---------- */
+/* ---------- 登录页外壳 ---------- */
 .content {
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-.add-button {
-    display: flex;
-    justify-content: flex-end;
-    margin: 10px;
-}
-
-.spacer {
-    width: 8px;
-    height: 8px;
-}
-
-.flex {
+/* ---------- 主壳（对应 home/MainLayoutView.vue 的 scoped） ----------
+   上游改版后界面是「左侧 132px 导航栏 + 右侧路由页」。这里照抄同一组数值。 */
+.app-shell {
+    width: 100%;
+    height: 100%;
     display: flex;
 }
 
-.flex-center {
+.app-nav {
+    width: 132px;
+    flex-shrink: 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    background: var(--el-bg-color);
+}
+
+.app-brand {
+    height: 80px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--el-text-color-primary);
+    font-size: 13px;
+    font-weight: 600;
 }
 
-@media (min-width: 451px) {
-    #header {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-    }
+.app-logo {
+    width: 34px;
+    height: 34px;
 }
 
-@media (min-width: 1000px) {
-    .auto-flex {
-        display: flex;
-    }
+.app-menu {
+    flex: 1;
+    border: 0;
+    background: none;
 }
 
-/* ---------- 列表（对应 home/List.vue） ---------- */
-.list-container {
+.app-menu .el-menu-item {
+    height: 46px;
+    margin: 8px 12px;
+    border-radius: 8px;
+    border: none !important;
+}
+
+.app-menu .el-menu-item.is-active {
+    background-color: var(--el-menu-hover-bg-color);
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
     height: 100%;
     overflow: hidden;
 }
 
+/* 窄屏：左侧栏翻到底下当 tab bar，品牌那块收掉 */
+@media (max-width: 800px) {
+    .app-shell {
+        display: block;
+        padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .app-nav {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        z-index: 10;
+        width: 100%;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        border-top: 1px solid var(--el-border-color-light);
+    }
+
+    .app-brand {
+        display: none;
+    }
+
+    .app-menu {
+        flex: none;
+        height: 58px;
+        display: flex;
+        justify-content: space-around;
+        gap: 4px;
+        padding: 4px;
+        box-sizing: border-box;
+    }
+
+    .app-menu .el-menu-item {
+        flex: 1;
+        height: 50px;
+        line-height: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0 4px !important;
+        transition: color var(--el-transition-duration), background-color var(--el-transition-duration);
+    }
+
+    .app-menu .el-menu-item .el-icon {
+        margin: 0;
+    }
+
+    .app-menu .el-menu-item span {
+        font-size: 12px;
+    }
+
+    .app-main {
+        height: 100%;
+    }
+}
+
+/* ---------- 页头（对应 custom/PageHeaderView.vue 的 scoped） ---------- */
+.page-header {
+    min-width: 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 24px;
+    margin-bottom: 8px;
+}
+
+.page-header-heading {
+    min-width: 0;
+    flex: 1;
+}
+
+.page-header-title {
+    line-height: 1.4;
+}
+
+.page-header-subtitle {
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.page-header-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+@media (max-width: 560px) {
+    .page-header {
+        align-items: flex-start;
+    }
+}
+
+/* ---------- 订阅页工具条（对应 home/SubscriptionView.vue 的 scoped） ---------- */
+.subscription-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 10px;
+}
+
+.subscription-filters,
+.subscription-actions {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.subscription-filters {
+    flex: 1;
+}
+
+.subscription-actions {
+    flex-shrink: 0;
+}
+
+.subscription-actions > * {
+    margin: 0 !important;
+}
+
+.subscription-actions .el-button {
+    margin: 0;
+}
+
+.subscription-search {
+    width: 220px;
+}
+
+.subscription-select {
+    width: 128px;
+}
+
+@media (max-width: 900px) {
+    .subscription-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .subscription-filters,
+    .subscription-actions {
+        width: 100%;
+    }
+
+    .subscription-filters {
+        flex-wrap: wrap;
+    }
+
+    .subscription-actions {
+        justify-content: flex-end;
+    }
+
+    .subscription-search {
+        width: 100%;
+    }
+
+    .subscription-select {
+        flex: 1 1 120px;
+    }
+}
+
+@media (max-width: 560px) {
+    .subscription-toolbar {
+        padding-bottom: 8px;
+    }
+
+    .subscription-actions {
+        justify-content: flex-end;
+        gap: 4px;
+    }
+}
+
+/* ---------- 列表容器（对应 home/SubscriptionListView.vue 的 scoped） ----------
+   .list-content 上游是 margin:0，左右留白交给 .app-page-padding（24px，窄屏 12px）。
+   预览以前自己写 0 10px —— 同一份主题在预览里和真界面上就差出 14px。 */
+.list-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.hide-scrollbar {
+    flex: 1;
+    min-height: 0;
+}
+
 .list-content {
-    margin: 0 10px;
+    margin: 0;
 }
 
 .list-week-title {
-    margin: 16px 0 8px 4px;
-}
-
-.grid-container {
-    display: grid;
-    grid-gap: 8px;
-    grid-template-columns: repeat(var(--ani-grid-columns), 1fr);
-    width: 100%;
+    margin-top: 12px;
+    margin-bottom: 4px;
 }
 
 .list-bottom-spacer {
     height: 8px;
 }
 
-/* ---------- 订阅卡片（对应 home/AniCard.vue） ---------- */
-.list-card-content {
-    display: flex;
-    align-items: center;
+.grid-container {
+    display: grid;
+    grid-gap: 8px;
     width: 100%;
 }
 
-.list-card-image-container {
-    height: 100%;
+/* 海报墙：auto-fill 而不是按屏宽算列数 —— 列数由 minmax 的下限决定，窗口一变自己就重排 */
+.cover-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-gap: 24px;
 }
 
-.list-card-image {
-    width: 92px;
-    height: 130px;
-    border: 1px solid var(--el-border-color-light);
-    border-radius: var(--el-border-radius-base);
-    cursor: pointer;
-    object-fit: cover;
+@media (max-width: 800px) {
+    .cover-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-gap: 12px;
+    }
 }
 
-.list-card-info {
+/* ---------- 订阅卡片（对应 home/AniCoverView.vue 的 scoped） ----------
+   海报墙：2:3 的封面，标题和字幕组压在封面下缘那道渐变上，季度/集数/备用源在封面外面。
+   预览以前复刻的是改版前的「左图右文 + 右侧三个圆按钮」列表卡，那套 DOM 上游已经没有了，
+   主题里 .list-card-image / .list-card-score 这些选择器如今一条都挂不上去。 */
+.cover-card {
+    min-width: 0;
+}
+
+.cover-image-container {
     position: relative;
-    flex-grow: 1;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 8px;
+    background-color: var(--el-fill-color-light);
 }
 
-.list-card-info-inner {
-    margin-left: 8px;
-}
-
-.list-card-title {
-    width: 200px;
-    line-height: 1.6;
-    letter-spacing: .0125em;
-    font-weight: 500;
-    font-size: .97em;
-    cursor: pointer;
-    color: var(--el-text-color-primary);
-}
-
-.list-card-score-container {
-    margin-bottom: 8px;
-}
-
-.list-card-score {
-    color: #E800A4;
-    cursor: pointer;
-}
-
-.list-card-tags {
-    width: 180px;
-    display: grid;
-    grid-gap: 4px;
-}
-
-.gtc3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.gtc2 {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.list-card-subgroup {
-    max-width: 60px;
-    color: var(--el-color-info);
-}
-
-.list-card-actions {
+/* 下缘这道渐变是上游画的，标题能压在图上全靠它，别去掉 */
+.cover-image-container:after {
+    content: "";
     position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0, 0, 0, .04) 38%, rgba(0, 0, 0, .36) 68%, rgba(0, 0, 0, .78) 100%);
+}
+
+.cover-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    cursor: pointer;
+    transition: filter .18s ease, transform .18s ease;
+}
+
+.cover-image-container:not(.is-disabled):hover .cover-image {
+    transform: scale(1.03);
+}
+
+.cover-image-container.is-disabled .cover-image {
+    filter: grayscale(1) brightness(.58);
+}
+
+.cover-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--el-text-color-secondary);
+    font-size: 28px;
+}
+
+.cover-score {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    background-color: var(--el-color-primary);
+}
+
+.cover-disabled-label {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    background-color: rgba(96, 98, 102, .92);
+    white-space: nowrap;
+}
+
+.cover-overlay {
+    position: absolute;
+    left: 0;
     right: 0;
     bottom: 0;
+    z-index: 1;
+    min-height: 92px;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     justify-content: flex-end;
+    padding: 42px 8px 8px;
+    box-sizing: border-box;
 }
 
-.list-card-spacer {
-    height: 5px;
+/* 右上那颗折角按钮：平时藏着，悬停或点开菜单才出来。触屏没有悬停，所以窄屏常驻 */
+.cover-actions {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    z-index: 3;
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity .16s ease, transform .16s ease;
+}
+
+.cover-card:hover .cover-actions,
+.cover-actions.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.cover-action-button {
+    width: 30px;
+    height: 30px;
+    color: var(--el-text-color-primary);
+    background-color: var(--el-bg-color-overlay);
+    box-shadow: var(--el-box-shadow-light);
+}
+
+.cover-title {
+    width: 100%;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    align-self: flex-start;
+    text-align: left;
+    line-height: 1.35;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+}
+
+.cover-meta {
+    display: grid;
+    gap: 2px;
+    margin-top: 5px;
+}
+
+.cover-meta-line {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 8px;
+    max-width: 100%;
+    color: rgba(255, 255, 255, .86);
+    font-size: 12px;
+    line-height: 1.4;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+}
+
+.cover-below-meta {
+    margin-top: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    width: 100%;
+}
+
+.cover-below-meta .el-tag {
+    border: 1px solid var(--el-border-color);
+}
+
+.cover-meta-fixed {
+    flex-shrink: 0;
+}
+
+.cover-subgroup {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 /* ---------- 登录页（对应 Login.vue） ---------- */
@@ -206,13 +541,279 @@ html, body, #app {
     margin-bottom: 16px;
 }
 
-/* ---------- 日志弹窗（对应 home/Logs.vue） ---------- */
-.logs-dialog .content {
-    color: #d8dee9;
-    background-color: #2e3440;
-    border-radius: var(--el-border-radius-base);
-    margin-top: 4px;
-    padding: 4px;
+/* ---------- 日志页（对应 home/LogsView.vue） ----------
+   上游 3.2.6x 把日志从弹窗搬成了独立页面：页头三颗动作、工具条三个筛选、
+   四列（时间 / 级别 / 来源 / 内容）的表格化列表，级别靠左边一条色线认。
+   下面这些数值照抄那支 .vue 的 scoped style。 */
+.logs-page {
+    padding-bottom: 8px;
+}
+
+.log-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.log-actions .el-button {
+    margin-left: 0;
+}
+
+.logs-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.logs-toolbar {
+    flex-shrink: 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.log-search {
+    flex: 1 1 220px;
+    min-width: 160px;
+}
+
+.level-select {
+    flex: 0 1 240px;
+    min-width: 180px;
+}
+
+/* 下拉里的「小圆点 + 级别 + 右侧条数」，圆点按级别换色 */
+.level-option,
+.level-option-name {
+    display: flex;
+    align-items: center;
+}
+
+.level-option {
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.level-option-name {
+    gap: 7px;
+}
+
+.level-dot {
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: var(--el-text-color-secondary);
+}
+
+.level-dot.is-info {
+    background-color: var(--el-color-primary);
+}
+
+.level-dot.is-warn {
+    background-color: var(--el-color-warning);
+}
+
+.level-dot.is-error {
+    background-color: var(--el-color-danger);
+}
+
+.level-count {
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+}
+
+.logger-select {
+    flex: 0 1 280px;
+    min-width: 180px;
+}
+
+.log-viewer {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: var(--el-bg-color);
+}
+
+.log-columns,
+.log-entry {
+    display: grid;
+    grid-template-columns: 82px 62px minmax(140px, 220px) minmax(0, 1fr);
+    column-gap: 10px;
+}
+
+.log-columns {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--el-border-color-light);
+    color: var(--el-text-color-secondary);
+    background-color: var(--el-fill-color-extra-light);
+    font-size: 12px;
+}
+
+.logs-scrollbar {
+    flex: 1;
+    min-height: 0;
+}
+
+.log-list {
+    min-height: 100%;
+}
+
+.log-entry {
+    align-items: start;
+    padding: 8px 9px;
+    border-bottom: 1px solid var(--el-border-color-extra-light);
+    border-left: 3px solid transparent;
+    transition: background-color .12s ease;
+}
+
+.log-entry:hover {
+    background-color: var(--el-fill-color-light);
+}
+
+.log-entry.level-info {
+    border-left-color: var(--el-color-primary-light-5);
+}
+
+.log-entry.level-warn {
+    border-left-color: var(--el-color-warning);
+}
+
+.log-entry.level-error {
+    border-left-color: var(--el-color-danger);
+}
+
+.log-time,
+.log-level,
+.logger-name,
+.thread-name,
+.log-message {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.log-time {
+    padding-top: 2px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.log-level {
+    width: fit-content;
+    min-width: 46px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    border-radius: 4px;
+    color: var(--el-text-color-secondary);
+    background-color: var(--el-fill-color);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.level-info .log-level {
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+}
+
+.level-warn .log-level {
+    color: var(--el-color-warning);
+    background-color: var(--el-color-warning-light-9);
+}
+
+.level-error .log-level {
+    color: var(--el-color-danger);
+    background-color: var(--el-color-danger-light-9);
+}
+
+.log-source {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    cursor: default;
+}
+
+.logger-name,
+.thread-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logger-name {
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+}
+
+.thread-name {
+    color: var(--el-text-color-placeholder);
+    font-size: 10px;
+}
+
+.log-message {
+    min-width: 0;
+    margin: 0;
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+    .logs-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .log-search {
+        flex: 1 1 calc(50% - 4px);
+    }
+
+    .logger-select {
+        flex: 1 1 calc(50% - 4px);
+    }
+}
+
+@media (max-width: 700px) {
+    .logs-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .log-search,
+    .logger-select,
+    .level-select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* 四列在手机上排不开：表头收掉，每行变成「时间 级别 来源 / 内容占满整行」 */
+    .log-columns {
+        display: none;
+    }
+
+    .log-entry {
+        grid-template-columns: 70px 52px minmax(0, 1fr);
+        row-gap: 6px;
+    }
+
+    .log-message {
+        grid-column: 1 / -1;
+    }
+
+    .thread-name {
+        display: none;
+    }
 }
 
 .full-width {

@@ -189,6 +189,23 @@ const KIT = String.raw`(() => {
     return of(...a)
   }
   window.__vis = sel => [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length)
+
+/*
+ * 点开第 n 部番 —— 已经展开的就别再点。
+ *
+ * 演示构建会把第一部番默认展开（SourceBrowserDialog 里那段 __DEMO__ 分支，为了让人
+ * 一眼看到组名右边那颗「已订阅」）。照着老脚本再点一次 .tile-head，收起来的正是
+ * 刚展开的那一部，后面的字幕组全找不到。
+ */
+window.__openTile = n => {
+  const t = window.__vis('.tile')[n]
+  if (!t) return 0
+  if (t.classList.contains('open')) return 1
+  const head = t.querySelector('.tile-head')
+  if (!head) return 0
+  head.click()
+  return 1
+}
   window.__click = (sel, txt) => {
     const e = window.__vis(sel).filter(x => x.textContent.includes(txt))[0]
     if (!e) throw new Error('找不到：' + sel + ' / ' + txt)
@@ -318,12 +335,12 @@ async function checkPreset(id) {
         note('▶ 场景一：浏览 Mikan → 点开一部番 → 切到 AniBT → 点开一部番')
         await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
         await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        await step('点开第一部番', `window.__openTile(0)`, 2000)
         await step('关掉列表', `window.__click('.browser .v-card-title .v-btn', '')`, 900)
         await step('切到 AniBT 一栏', `window.__click('.v-tab', 'AniBT')`, 900)
         await step('浏览 AniBT 番剧列表', `window.__click('button.browse', 'AniBT')`, 3000)
         /* 故意点第二部：第一部在 Mikan 那边展开过，缓存命中的话一个请求都不发 —— 那正是 bug 的另一半 */
-        await step('点开第二部番', `(window.__vis('.tile-head')[1].click(), 1)`, 2000)
+        await step('点开第二部番', `window.__openTile(1)`, 2000)
 
         const log1 = await ev('window.__log', 0)
         dump(log1)
@@ -342,7 +359,7 @@ async function checkPreset(id) {
         const toQueue = async (tile = 0) => {
             await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
             await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-            await step(`点开第 ${tile + 1} 部番`, `(window.__vis('.tile-head')[${tile}].click(), 1)`, 2000)
+            await step(`点开第 ${tile + 1} 部番`, `window.__openTile(${tile})`, 2000)
             await step('第一个字幕组点「添加」', `window.__click('.group .v-btn', '添加')`, 900)
             await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 2600)
         }
@@ -472,7 +489,7 @@ async function checkPreset(id) {
         note('▶ 场景五：勾两个字幕组 → 下一步 → 撞名 → 覆盖')
         await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
         await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        await step('点开第一部番', `window.__openTile(0)`, 2000)
         await step('勾第一个字幕组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 900)
         await step('版本弹窗点「确定」', `window.__click('.v-card-actions .v-btn', '确定')`, 900)
         await step('勾第二个字幕组', `(window.__vis('.group input[type=checkbox]')[1].click(), 1)`, 900)
@@ -519,7 +536,7 @@ async function checkPreset(id) {
         note('▶ 场景六：Mikan 第一个组 / AniBT 第二个组 → 组名右边要有「已订阅」')
         await step('打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
         await step('浏览 Mikan 番剧列表', `window.__click('button.browse', 'Mikan')`, 2600)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        await step('点开第一部番', `window.__openTile(0)`, 2000)
 
         const flagMain = await ev(`(window.__vis('.group-flag')[0]?.textContent || '').trim()`, 0)
         if (flagMain !== '已订阅') bad.push('已经订过的那个组，组名右边没有「已订阅」')
@@ -530,7 +547,7 @@ async function checkPreset(id) {
         await step('重新打开「添加订阅」', `window.__clickOne('button', ${ADD_LABELS})`, 900)
         await step('切到 AniBT 一栏', `window.__click('.v-tab', 'AniBT')`, 900)
         await step('浏览 AniBT 番剧列表', `window.__click('button.browse', 'AniBT')`, 3000)
-        await step('点开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 2000)
+        await step('点开第一部番', `window.__openTile(0)`, 2000)
         const flagStandby = await ev(
             `window.__vis('.group-flag').filter(e => e.textContent.trim() === '已订阅').length`, 0)
         if (!flagStandby) bad.push('备用 RSS 里的那个组没被算成「已订阅」—— 只比了主 RSS？')

@@ -255,10 +255,10 @@ html h1, html h2, html h3, html h4 {
 }
 
 /* 凡是「值」都走等宽并对齐数位 */
-html .list-card-score,
+html .cover-score,
 html .el-input-number .el-input__inner,
 html .el-progress__text,
-html .logs-dialog,
+html .logs-page,
 html code, html kbd, html pre, html samp {
     font-family: var(--md-mono);
     font-variant-numeric: tabular-nums;
@@ -334,7 +334,7 @@ html .el-button--warning {
    `is-text is-has-bg el-button--danger`）。它们旁边站着的「重启」「更新」是 warning /
    success，都有底色 —— 唯独红的那两颗光秃秃，一排按钮里就它们像没做完。
    真正该透明的是「text 但没 bg」那一档，下面 334 行那条已经管了；
-   卡片右侧那排图标删除键由 1192 行的 .list-card-actions 覆盖（同权重、写在后面），
+   卡片右侧那排图标删除键由 1192 行的 .cover-actions 覆盖（同权重、写在后面），
    所以这条改成有底色之后，那排照旧是透明圆钮。 */
 html .el-button--danger {
     --btn-bg: var(--md-error-container);
@@ -524,9 +524,9 @@ html {
    `!important` 是必须的：上游好几处把 `gap: 8px` 直接写在行内（「爱发电」的激活码那行
    就是），常规选择器一条都打不过。
 
-   排除 `list-card*`：订阅卡片右侧那排图标键（`.list-card-actions`）也是 flex，
+   排除 `list-card*`：订阅卡片右侧那排图标键（`.cover-actions`）也是 flex，
    加上 gap 会把三颗图标摊开、把卡片撑变形。`:has(> .el-button)` 展开是 0-2-2，
-   比 `html .list-card-actions`（0-1-1）高，事后想拦也拦不住，只能一开始就不选进来。 */
+   比 `html .cover-actions`（0-1-1）高，事后想拦也拦不住，只能一开始就不选进来。 */
 html div:not([class*="list-card"]):has(> .el-button),
 html div:not([class*="list-card"]):has(> .el-input),
 html div:not([class*="list-card"]):has(> .el-select),
@@ -587,7 +587,7 @@ html .el-form-item__label {
    卡片右侧那排图标删除键在自己的一列里竖着排，加边距会把订阅卡撑高；
    气泡确认里的按钮档位本来就压到 28px 才塞得下，两颗之间的 8px 也是上面
    `.el-popconfirm .action` 用 gap 排好的，再加一圈就又溢出去了。 */
-html .list-card-actions .el-button,
+html .cover-actions .el-button,
 html .el-popconfirm .el-button {
     margin: 0;
 }
@@ -1418,24 +1418,24 @@ html .el-message .el-message__content {
 
 /* ================= 订阅卡片 ================= */
 /* 下面几条是 Vue scoped 样式（带 [data-v-]），权重高，必须 !important，别删 */
-.list-card-score {
-    color: var(--md-primary) !important;
+.cover-score {
+    background-color: var(--md-primary) !important;
     font-family: var(--md-mono) !important;
     font-weight: 500 !important;
     font-variant-numeric: tabular-nums !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: var(--md-shape-s) !important;
     border-color: transparent !important;
 }
 
-html .list-card-title {
+html .cover-title {
     font-weight: 500;
     letter-spacing: .15px;
 }
 
-html .list-card-time {
+html .cover-below-meta .el-tag--info {
     color: var(--md-on-surface-variant);
 }
 
@@ -1456,8 +1456,8 @@ html .list-week-title {
    把图标键做成 36px（标题那行只有 25px），第一颗就比标题低了 10px，像挂在评分那行上。
    改成从顶上排，起点上提 6px，两条中线对齐（实测残差 0.4px）。
    标题是写死单行的（上游 `line-clamp: 1`），所以这个差是常数，补一个定值就够。
-   `!important`：上游是 Vue scoped 的 `.list-card-actions[data-v-]`（0-2-0），压不过。 */
-html .list-card-actions {
+   `!important`：上游是 Vue scoped 的 `.cover-actions[data-v-]`（0-2-0），压不过。 */
+html .cover-actions {
     top: -6px !important;
     justify-content: flex-start !important;
 }
@@ -1465,7 +1465,7 @@ html .list-card-actions {
 /* 卡片右侧那排图标按钮：M3 icon button，圆的、透明底 */
 /* 顺序要紧：这条和 .el-button--danger 权重相同，靠写在后面才盖得住，
    所以下面得把 danger 的红字再补回来一次 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     --btn-bg: transparent;
     --btn-fg: var(--md-on-surface-variant);
     --btn-h: 36px;      /* 卡片里挤，比通用的 40 收一档 */
@@ -1473,17 +1473,17 @@ html .list-card-actions .el-button {
     --btn-px: 0px;
 }
 
-html .list-card-actions .el-button--danger {
+html .cover-actions .el-button--danger {
     --btn-fg: var(--md-error);
 }
 
-html .list-card-actions .el-button:hover {
+html .cover-actions .el-button:hover {
     box-shadow: none;
 }
 
 /* ================= 顶栏 ================= */
 /* M3 top app bar：平时和页面同色不分层，滚动了才升起（升起那下由 JS 触发） */
-html #header {
+html .app-nav {
     background-color: transparent;
     transition: background-color var(--md-dur-med) var(--md-ease-standard),
     box-shadow var(--md-dur-med) var(--md-ease-standard);
@@ -1579,7 +1579,7 @@ html.md-motion .md-ripple.is-out {
 }
 
 /* 顶栏滚动升起：M3 top app bar 的 on-scroll 态 */
-html.md-motion #header.md-scrolled {
+html.md-motion .app-nav.md-scrolled {
     background-color: var(--md-surface-container);
     box-shadow: var(--md-elev-2);
 }
@@ -1618,7 +1618,7 @@ html .el-card,
 html .el-input__wrapper,
 html .el-switch__core,
 html .el-switch__core .el-switch__action,
-html #header {
+html .app-nav {
         transition-timing-function: linear;
         transition-duration: .1s;
     }

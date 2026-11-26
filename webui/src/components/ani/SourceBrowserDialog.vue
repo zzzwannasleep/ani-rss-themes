@@ -310,6 +310,18 @@ async function fetchList() {
     if (weekTab.value >= weeks.value.length) weekTab.value = 0
     loadedSource.value = props.source
     if (!weeks.value.length) ui.warn('没有查到番剧')
+    /*
+     * 演示站：列表一出来就替人展开第一个「订阅过」的番。
+     *
+     * 组名右边那颗「已订阅」要走到「添加订阅 → 某站 → 浏览番剧列表 → 展开一部」才看得见，
+     * 五层之后才有反馈 —— 预览站上没人会这么点，于是「新功能在预览里看不到」。
+     * 只省这一下点击，别的交互一点不改。
+     */
+    if (__DEMO__ && weeks.value.length) {
+      const withSub = weeks.value.flatMap(w => w.items).find(i => i.exists)
+      const first = withSub || weeks.value[0].items[0]
+      if (first) void toggleItem(first)
+    }
   } finally {
     loading.value = false
   }

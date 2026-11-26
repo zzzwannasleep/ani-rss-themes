@@ -204,19 +204,19 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
 /* 封面在壁纸上要压得住 */
-.list-card-image {
+.cover-image {
     border-radius: 10px !important;
     box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .75) !important;
 }
 
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
 }
 
 /* 登录页：整张壁纸铺满，只留一块玻璃 */
@@ -355,7 +355,7 @@ html .el-button.is-circle {
 }
 
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     padding-left: 8px;
     padding-right: 8px;
 }

@@ -8,9 +8,12 @@
 
     <!-- 1. Element Plus 组件样式：和 ani-rss 实际用的是同一份（MIT，见 preview/NOTICE.md） -->
     <link rel="stylesheet" href="preview/element-plus.css"/>
-    <!-- 2. ani-rss 自己那层样式：热链上游仓库，不落地，自动跟版本（GPL-2.0，见 preview/NOTICE.md） -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wushuo894/ani-rss@master/ani-rss-ui/src/style.css"/>
-    <!-- 3. 组件布局层 -->
+    <!-- 2. ani-rss 自己那层样式：热链上游仓库，不落地，自动跟版本（GPL-2.0，见 preview/NOTICE.md）。
+         路径是 src/css/ 下的两份，别写回 src/style.css —— 上游改版时把它挪进了 css/ 目录，
+         旧地址会 404，而 404 的表现只是「界面忽然变得又素又挤」，一点报错都没有。 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wushuo894/ani-rss@master/ani-rss-ui/src/css/style.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wushuo894/ani-rss@master/ani-rss-ui/src/css/ext.css"/>
+    <!-- 3. 组件布局层：上游把这些写在 .vue 的 scoped style 里，热链拿不到，只能照数值复刻 -->
     <link rel="stylesheet" href="preview/app.css"/>
 
     <style>
@@ -45,20 +48,33 @@
             height: 44px;
             z-index: 5000;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
-            padding: 0 14px;
+            padding: 0 10px;
             background: #0d0f13;
             border-bottom: 1px solid #232830;
+            /* 按钮现在钉成单行了，窄屏上总宽会超出去 —— 让它横着滑，别把最后一颗裁掉。
+               滚动条自己不显示，44px 高的横条里塞一根滚动条等于白占 12px */
+            overflow-x: auto;
+            scrollbar-width: none;
         }
 
+        .pv-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 主题会把字距、大小写、字重全改掉，控制栏必须用 !important 把自己钉住 ——
+           不然霓虹／终端这类「全大写 + 字距拉宽」的主题一上，按钮文字就开始折行，
+           44px 高的横条瞬间变成两行。 */
         .pv-bar, .pv-bar * {
-            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
-            font-size: 13px;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif !important;
+            font-size: 13px !important;
             color: #e8ecf2;
-            letter-spacing: 0;
-            text-transform: none;
-            font-weight: 400;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+            font-weight: 400 !important;
+            white-space: nowrap !important;
+            line-height: 1.2;
         }
 
         .pv-bar select, .pv-bar button {
@@ -255,60 +271,140 @@
     <button id="copyJs" class="pv-js" type="button"></button>
 </div>
 
-<div id="app" style="max-width: 1600px;">
+<div id="app">
 
-    <!-- ============ 首页 ============ -->
-    <div class="content" id="home-view">
-        <div id="header">
-            <div class="auto-flex" style="margin: 10px;">
-                <div>
-                    <div class="el-input el-input--prefix" style="min-width: 210px;">
-                        <div class="el-input__wrapper">
-                            <span class="el-input__prefix"><span class="el-input__prefix-inner"><i class="el-icon el-input__icon" data-icon="search"></i></span></span>
-                            <input class="el-input__inner" id="search" type="text" placeholder="搜索"/>
-                        </div>
+    <!-- ============ 订阅页（对应 home/MainLayoutView.vue + home/SubscriptionView.vue） ============
+         上游改版后，主界面不再是「顶部一条工具栏 + 卡片列表」，而是「左侧 132px 导航栏 + 右侧路由页」，
+         订阅页里再套一层页头（标题 + 副标题）和工具条，列表也从「一行一条的卡片」换成了「海报墙」。
+         预览原先复刻的是改版前那一版，于是这里看到的样子和装上去的样子不是一个界面 ——
+         主题又是照 DOM 写选择器的，预览再准也没用。下面这一层按现在的结构重搭。 -->
+    <div class="app-shell" id="home-view">
+        <aside class="app-nav">
+            <div class="app-brand">
+                <svg class="app-logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="6" cy="18" r="2.6" fill="currentColor"/>
+                    <path d="M4 11.2A8.8 8.8 0 0 1 12.8 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                    <path d="M4 4.6A15.4 15.4 0 0 1 19.4 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+                <span>ANI-RSS</span>
+            </div>
+            <!-- 五项由 preview.js 按上游的图标和顺序渲染；点了会跳到对应的弹窗 -->
+            <ul class="el-menu app-menu" id="nav" role="menubar"></ul>
+        </aside>
+
+        <main class="app-main">
+            <div class="subscription-page app-page-layout" id="subs-view">
+                <header class="page-header app-page-padding">
+                    <div class="page-header-heading">
+                        <h2 class="page-header-title">订阅</h2>
+                        <span class="el-text el-text--info el-text--small page-header-subtitle" id="subs-count"></span>
                     </div>
-                </div>
-                <div class="spacer"></div>
-                <div style="min-width: 300px; display: flex;">
-                    <div style="flex: 1;">
-                        <div class="el-select" data-select="month">
-                            <div class="el-select__wrapper">
-                                <div class="el-select__selection">
-                                    <div class="el-select__selected-item el-select__placeholder is-transparent"><span data-value>请选择</span></div>
+                    <div class="page-header-actions"></div>
+                </header>
+
+                <div class="subscription-body app-page-content app-page-padding">
+                    <div class="subscription-toolbar">
+                        <div class="subscription-filters">
+                            <div class="el-input el-input--prefix subscription-search">
+                                <div class="el-input__wrapper">
+                                    <span class="el-input__prefix"><span class="el-input__prefix-inner"><i class="el-icon el-input__icon" data-icon="search"></i></span></span>
+                                    <input class="el-input__inner" id="search" type="text" placeholder="搜索"/>
                                 </div>
-                                <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
+                            </div>
+                            <div class="el-select subscription-select" data-select="month">
+                                <div class="el-select__wrapper">
+                                    <div class="el-select__selection">
+                                        <div class="el-select__selected-item el-select__placeholder is-transparent"><span data-value>日期</span></div>
+                                    </div>
+                                    <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
+                                </div>
+                            </div>
+                            <div class="el-select subscription-select" data-select="enable">
+                                <div class="el-select__wrapper">
+                                    <div class="el-select__selection">
+                                        <div class="el-select__selected-item el-select__placeholder"><span data-value>已启用</span></div>
+                                    </div>
+                                    <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
+                                </div>
                             </div>
                         </div>
+                        <div class="subscription-actions" id="toolbar"></div>
                     </div>
-                    <div class="spacer"></div>
-                    <div style="flex: 1;">
-                        <div class="el-select" data-select="enable">
-                            <div class="el-select__wrapper">
-                                <div class="el-select__selection">
-                                    <div class="el-select__selected-item el-select__placeholder"><span data-value>已启用</span></div>
+
+                    <div class="list-container">
+                        <div class="el-scrollbar hide-scrollbar">
+                            <div class="el-scrollbar__wrap">
+                                <div class="el-scrollbar__view">
+                                    <div class="list-content" id="list"></div>
+                                    <div class="list-bottom-spacer"></div>
                                 </div>
-                                <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="add-button" id="toolbar"></div>
-        </div>
 
-        <div style="flex: 1; overflow: hidden;">
-            <div class="list-container">
-                <div class="el-scrollbar hide-scrollbar">
-                    <div class="el-scrollbar__wrap">
-                        <div class="el-scrollbar__view">
-                            <div class="list-content" id="list"></div>
-                            <div class="list-bottom-spacer"></div>
+            <!--
+                日志（home/LogsView.vue）。上游 3.2.6x 把它从弹窗改成了独立页面 ——
+                页头三颗动作、工具条三个筛选、四列（时间/级别/来源/内容）的表格化列表。
+                预览以前把它塞在 el-dialog 里，弹窗尺寸下四列挤成两行，主题的
+                .logs-page 那几条规则也就永远量不准。
+            -->
+            <div class="logs-page app-page-layout" id="logs-view" style="display: none;">
+                <header class="page-header app-page-padding">
+                    <div class="page-header-heading">
+                        <h2 class="page-header-title">日志</h2>
+                        <span class="el-text el-text--info el-text--small page-header-subtitle" id="logs-count">共 0 条 · 显示 0 条</span>
+                    </div>
+                    <div class="page-header-actions log-actions">
+                        <button type="button" class="el-button auto-button" data-act="logs-download">
+                            <i class="el-icon" data-icon="download"></i><span>下载</span></button>
+                        <button type="button" class="el-button auto-button" data-act="logs-refresh">
+                            <i class="el-icon" data-icon="refresh"></i><span>刷新</span></button>
+                        <button type="button" class="el-button el-button--danger auto-button" data-act="mb-clear-logs">
+                            <i class="el-icon" data-icon="del"></i><span>清空</span></button>
+                    </div>
+                </header>
+                <div class="logs-body app-page-content app-page-padding">
+                    <section class="logs-toolbar" aria-label="日志筛选">
+                        <div class="el-input el-input--prefix log-search">
+                            <div class="el-input__wrapper">
+                                <span class="el-input__prefix"><span class="el-input__prefix-inner"><i class="el-icon el-input__icon" data-icon="search"></i></span></span>
+                                <input class="el-input__inner" id="log-search" type="text" placeholder="搜索日志"/>
+                            </div>
+                        </div>
+                        <div class="el-select level-select" data-select="log-level">
+                            <div class="el-select__wrapper">
+                                <div class="el-select__selection">
+                                    <div class="el-select__selected-item el-select__placeholder is-transparent"><span data-value>日志等级</span></div>
+                                </div>
+                                <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
+                            </div>
+                        </div>
+                        <div class="el-select logger-select" data-select="log-logger">
+                            <div class="el-select__wrapper">
+                                <div class="el-select__selection">
+                                    <div class="el-select__selected-item el-select__placeholder is-transparent"><span data-value>来源</span></div>
+                                </div>
+                                <div class="el-select__suffix"><i class="el-icon el-select__caret el-select__icon" data-icon="caret2"></i></div>
+                            </div>
+                        </div>
+                    </section>
+                    <div class="log-viewer">
+                        <div class="log-columns" aria-hidden="true">
+                            <span>时间</span><span>级别</span><span>来源</span><span>内容</span>
+                        </div>
+                        <div class="el-scrollbar logs-scrollbar">
+                            <div class="el-scrollbar__wrap">
+                                <div class="el-scrollbar__view">
+                                    <div class="log-list" id="log-list"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- ============ 登录页 ============ -->

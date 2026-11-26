@@ -160,6 +160,21 @@ const PROBE = await readFile(join(HERE, 'dialog-layout-probe.js'), 'utf8')
 const KIT = String.raw`(() => {
   const vis = sel => [...document.querySelectorAll(sel)].filter(e => e.getClientRects().length)
   window.__vis = vis
+
+  /*
+   * 点开第 n 部番 —— 已经展开的就别再点。
+   * 演示构建会把第一部默认展开（SourceBrowserDialog 里那段 __DEMO__ 分支，为了让人一眼
+   * 看到组名右边那颗「已订阅」）。照着老写法再点一次 .tile-head，收起来的正是刚展开的那部。
+   */
+  window.__openTile = n => {
+    const t = vis('.tile')[n]
+    if (!t) return 0
+    if (t.classList.contains('open')) return 1
+    const head = t.querySelector('.tile-head')
+    if (!head) return 0
+    head.click()
+    return 1
+  }
   const label = e => ((e.getAttribute('title') || '') + ' ' + (e.textContent || '')).replace(/\s+/g, ' ')
   /*
    * 按文字/title 点一颗按钮，给一串候选名，命中第一个。
@@ -301,7 +316,7 @@ const SCENES = [
         steps: [
             ['打开添加订阅', `window.__hit(${ADD})`, 900],
             ['浏览 Mikan 列表', `window.__click('button.browse', 'Mikan')`, 2800, '列表'],
-            ['展开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 1800, '展开字幕组'],
+            ['展开第一部番', `window.__openTile(0)`, 1800, '展开字幕组'],
             ['第一个字幕组点添加', `window.__click('.group .v-btn', '添加')`, 900, '挑版本'],
         ],
     },
@@ -318,7 +333,7 @@ const SCENES = [
         steps: [
             ['打开添加订阅', `window.__hit(${ADD})`, 900],
             ['浏览 Mikan 列表', `window.__click('button.browse', 'Mikan')`, 2800],
-            ['展开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 1800],
+            ['展开第一部番', `window.__openTile(0)`, 1800],
             ['第一个字幕组点添加', `window.__click('.group .v-btn', '添加')`, 900],
             ['版本弹窗点确定', `window.__click('.v-card-actions .v-btn', '确定')`, 2600, '基本'],
             ['切自定义', `window.__click('.v-tab', '自定义')`, 700, '自定义'],
@@ -336,12 +351,12 @@ const SCENES = [
         steps: [
             ['打开添加订阅', `window.__hit(${ADD})`, 900],
             ['浏览 Mikan 列表', `window.__click('button.browse', 'Mikan')`, 2800],
-            ['展开第一部番', `(window.__vis('.tile-head')[0].click(), 1)`, 1800],
+            ['展开第一部番', `window.__openTile(0)`, 1800],
             ['勾第一个字幕组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 800],
             ['版本弹窗点确定', `window.__click('.v-card-actions .v-btn', '确定')`, 800],
             /* 一次只展开一部：展开第二部时第一部那块已经被 v-if 拿掉了，
                所以下面取 [0] 拿到的确实是第二部的字幕组 */
-            ['展开第二部番', `(window.__vis('.tile-head')[1].click(), 1)`, 1800],
+            ['展开第二部番', `window.__openTile(1)`, 1800],
             ['勾第二部的第一个组', `(window.__vis('.group input[type=checkbox]')[0].click(), 1)`, 800],
             ['版本弹窗点确定', `window.__click('.v-card-actions .v-btn', '确定')`, 800],
             ['点下一步', `window.__click('.basket .v-btn', '下一步')`, 2600, '两条队列'],

@@ -215,7 +215,7 @@ html h1, html h2, html h3,
 html .el-dialog__title,
 html .title-h2,
 html .list-week-title,
-html .list-card-title {
+html .cover-title {
     font-weight: 600;
     letter-spacing: -.018em;   /* Apple 的 display 字距是负的 */
 }
@@ -228,8 +228,8 @@ html .el-checkbox__label {
 }
 
 /* 数字走等宽，评分和集数不会跳 */
-html .list-card-score,
-html .list-card-subgroup {
+html .cover-score,
+html .cover-subgroup {
     font-variant-numeric: tabular-nums;
 }
 
@@ -479,7 +479,7 @@ html .el-card:hover {
 }
 
 /* 同心圆角：海报的圆角 = 卡片圆角 − 卡片内边距 */
-html .list-card-image {
+html .cover-image {
     border-radius: var(--lg-r-in) !important;
     border: 0 !important;
     box-shadow: 0 6px 18px -8px rgba(20, 24, 60, .55) !important;
@@ -622,7 +622,7 @@ html .el-tag {
 }
 
 /* ================= 顶栏 / 周分组 ================= */
-#header {
+.app-nav {
     border-radius: var(--lg-r);
     background-color: var(--el-fill-color-lighter);
     backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
@@ -637,8 +637,8 @@ html .list-week-title {
     opacity: .55;
 }
 
-html .list-card-score {
-    color: var(--el-color-primary) !important;
+html .cover-score {
+    background-color: var(--el-color-primary) !important;
     font-weight: 600 !important;
 }
 

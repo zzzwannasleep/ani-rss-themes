@@ -267,13 +267,13 @@ html * {
 }
 
 /* Soft Ink 的规矩：凡是「数据」都走等宽 + 表格数字 —— 集数、评分、时间戳、订阅源 */
-html .list-card-score,
-html .list-card-url,
-html .list-card-time,
+html .cover-score,
+html .cover-subgroup,
+html .cover-below-meta .el-tag--info,
 html .el-progress__text,
 html .el-input-number .el-input__inner,
 html .el-descriptions__content,
-html .logs-dialog,
+html .logs-page,
 html code, html kbd, html pre, html samp {
     font-family: var(--ab-mono);
     font-variant-numeric: tabular-nums;
@@ -289,7 +289,7 @@ body {
 }
 
 /* ⚠ 这一层（不装 JS 时）刻意不碰 ani-rss 的任何布局。
-   早先这里写过 #app 的 max-width、#header 的顶栏化、把列表网格摊平之类的规则，
+   早先这里写过 #app 的 max-width、.app-nav 的顶栏化、把列表网格摊平之类的规则，
    全是在赌 ani-rss 的内部结构 —— 换个版本或换个「页面设置」就散架。
    界面级的还原交给配套的 js/autobangumi.js：它按上游源码把 AutoBangumi 的
    界面整个建出来，不改 ani-rss 一个节点。这里只负责配色和控件。 */

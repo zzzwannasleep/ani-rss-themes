@@ -167,18 +167,18 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 10px !important;
     box-shadow: 0 10px 22px -14px rgba(20, 40, 70, .6) !important;
 }
 
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
 }
 
 /* 登录页：风景照全露出来，只浮一块雾玻璃 */
@@ -336,7 +336,7 @@ html .el-dialog__title,
 html .el-collapse-item__header,
 html .title-h2,
 html .list-week-title,
-html .list-card-title {
+html .cover-title {
     font-family: Georgia, "Songti SC", "Noto Serif SC", "Source Han Serif SC",
     SimSun, serif;
     font-weight: 600;

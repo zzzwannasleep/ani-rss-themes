@@ -62,11 +62,12 @@
         editPen: P('<path fill="currentColor" d="m199.04 672.64 193.984 112 224-387.968-193.92-112-224 388.032zm-23.872 60.16 32.896 148.288 144.896-45.696zM455.04 229.248l193.92 112 56.704-98.112-193.984-112zM104.32 708.8l384-665.024 304.768 175.936L409.152 884.8h.064l-248.448 78.336zm384 254.272v-64h448v64z"/>'),
         documentAdd: P('<path fill="currentColor" d="M832 384H576V128H192v768h640zm-26.496-64L640 154.496V320zM160 64h480l256 256v608a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V96a32 32 0 0 1 32-32m320 512V448h64v128h128v64H544v128h-64V640H352v-64z"/>'),
         grid: P('<path fill="currentColor" d="M640 384v256H384V384zm64 0h192v256H704zm-64 512H384V704h256zm64 0V704h192v192zm-64-768v192H384V128zm64 0h192v192H704zM320 384v256H128V384zm0 512H128V704h192zm0-768v192H128V128z"/>'),
+        collection: P('<path fill="currentColor" d="M224 160h576a32 32 0 0 1 0 64H224a32 32 0 0 1 0-64m0 160h576a32 32 0 0 1 0 64H224a32 32 0 0 1 0-64M96 480h832a32 32 0 0 1 32 32v384a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V512a32 32 0 0 1 32-32m32 64v320h768V544z"/>'),
         remove: P('<path fill="currentColor" d="M352 480h320a32 32 0 1 1 0 64H352a32 32 0 0 1 0-64"/><path fill="currentColor" d="M512 896a384 384 0 1 0 0-768 384 384 0 0 0 0 768m0 64a448 448 0 1 1 0-896 448 448 0 0 1 0 896"/>'),
         warningFilled: P('<path fill="currentColor" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896m0 192a58.43 58.43 0 0 0-58.24 63.744l23.36 256.384a35.072 35.072 0 0 0 69.76 0l23.296-256.384A58.43 58.43 0 0 0 512 256m0 512a51.2 51.2 0 1 0 0-102.4 51.2 51.2 0 0 0 0 102.4"/>'),
         successFilled: P('<path fill="currentColor" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896m-55.808 536.384-99.52-99.584a38.4 38.4 0 1 0-54.336 54.336l126.72 126.72a38.27 38.27 0 0 0 54.336 0l262.4-262.464a38.4 38.4 0 1 0-54.272-54.336z"/>'),
         infoFilled: P('<path fill="currentColor" d="M512 64a448 448 0 1 1 0 896.064A448 448 0 0 1 512 64m67.2 275.072c33.28 0 60.288-23.104 60.288-57.344s-27.072-57.344-60.288-57.344c-33.28 0-60.16 23.104-60.16 57.344s26.88 57.344 60.16 57.344M590.912 699.2c0-6.848 2.368-24.64 1.024-34.752l-52.608 60.544c-10.88 11.456-24.512 19.392-30.912 17.28a12.99 12.99 0 0 1-8.256-14.72l87.68-276.992c7.168-35.136-12.544-67.2-54.336-71.296-44.096 0-108.992 44.736-148.48 101.504 0 6.784-1.28 23.68.064 33.792l52.544-60.608c10.88-11.328 23.552-19.328 29.952-17.152a12.8 12.8 0 0 1 7.808 16.128L388.48 728.576c-10.048 32.256 8.96 63.872 55.04 71.04 67.84 0 107.904-43.648 147.456-100.416z"/>'),
-        calendar: P('<path fill="currentColor" d="M128 384v512h768V192H768v32a32 0 1 1-64 0v-32H320v32a32 32 0 0 1-64 0v-32H128v128h768v64zm192-256h384V96a32 32 0 1 1 64 0v32h160a32 32 0 0 1 32 32v768a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V160a32 32 0 0 1 32-32h160V96a32 32 0 0 1 64 0zm-32 384h64a32 32 0 0 1 0 64h-64a32 32 0 0 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m192-192h64a32 32 0 0 1 0 64h-64a32 32 0 0 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m192-192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64"/>'),
+        calendar: P('<path fill="currentColor" d="M128 384v512h768V192H768v32a32 32 0 1 1-64 0v-32H320v32a32 32 0 0 1-64 0v-32H128v128h768v64zm192-256h384V96a32 32 0 1 1 64 0v32h160a32 32 0 0 1 32 32v768a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V160a32 32 0 0 1 32-32h160V96a32 32 0 0 1 64 0zm-32 384h64a32 32 0 0 1 0 64h-64a32 32 0 0 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m192-192h64a32 32 0 0 1 0 64h-64a32 32 0 0 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m192-192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64m0 192h64a32 32 0 1 1 0 64h-64a32 32 0 1 1 0-64"/>'),
         star: P('<path fill="currentColor" d="M283.84 867.84 512 747.776l228.16 119.936a6.4 6.4 0 0 0 9.28-6.72l-43.52-254.08 184.512-179.904a6.4 6.4 0 0 0-3.52-10.88l-255.104-37.12L517.76 147.904a6.4 6.4 0 0 0-11.52 0L392.192 379.072l-255.104 37.12a6.4 6.4 0 0 0-3.52 10.88L318.08 606.976l-43.52 254.08a6.4 6.4 0 0 0 9.28 6.72z"/>'),
         uploadFilled: P('<path fill="currentColor" d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.81 239.81 0 0 1 235.392 194.752C866.88 400.512 960 500.864 960 624a240 240 0 0 1-240 240c-5.504 0-10.624-1.28-16-1.6v1.6z"/>'),
         videoPlay: P('<path fill="currentColor" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896m0 64a384 384 0 1 0 0 768 384 384 0 0 0 0-768m-48 247.616L668.608 512 464 648.384zm-16-119.808 326.4 217.6a32 32 0 0 1 0 53.184l-326.4 217.6A32 32 0 0 1 400 704V320a32 32 0 0 1 48-26.192"/>'),
@@ -267,50 +268,69 @@
     const okCancel = btn('确定', {type: 'primary', text: true, bg: true, icon: 'check', act: null}).replace('<button', '<button data-close') +
         btn('取消', {text: true, bg: true, icon: 'close'}).replace('<button', '<button data-close')
 
-    /* ==================== 首页：工具栏与列表 ==================== */
-    const TOOLS = [
-        ['plus', '添加', 'el-button--primary', 'add'],
-        ['download', '下载', '', 'dlg-download'],
-        ['refresh', '刷新', '', 'refresh'],
-        ['fold', '管理', '', 'dlg-manage'],
-        ['setting', '设置', '', 'dlg-settings'],
-        ['tickets', '日志', '', 'dlg-logs'],
+    /* ==================== 侧栏与页头动作 ==================== */
+    /* 上游 MainLayoutView 的 el-menu：首页 / 订阅 / 下载 / 日志 / 设置。
+       预览里只有订阅页有内容，另外三项点了开对应弹窗 —— 弹窗是主题重点染的地方，
+       不挂上去那几处就没法在预览里看到。 */
+    const NAV = [
+        ['grid', '首页', 'nav-home', false],
+        ['collection', '订阅', 'nav-subs', true],
+        ['download', '下载', 'dlg-download', false],
+        ['tickets', '日志', 'nav-logs', false],
+        ['setting', '设置', 'dlg-settings', false],
     ]
 
-    $('#toolbar').innerHTML = TOOLS.map(([ic, text, type, act], i) =>
-        '<div style="margin:' + (i === TOOLS.length - 1 ? '0 0 0 4px' : '0 4px') + '">' +
-        '<button type="button" class="el-button ' + type + ' is-text is-has-bg" data-act="' + act + '">' +
-        '<i class="el-icon" data-icon="' + ic + '"></i><span>' + text + '</span></button></div>'
+    $('#nav').innerHTML = NAV.map(([ic, text, act, on]) =>
+        '<li class="el-menu-item' + (on ? ' is-active' : '') + '" role="menuitem" tabindex="0" data-act="' + act + '">' +
+        '<i class="el-icon" data-icon="' + ic + '"></i><span>' + text + '</span></li>'
+    ).join('')
+
+    /* 页头右边那三颗照上游 SubscriptionView 写：都是普通按钮（添加那颗是 primary），
+       不是改版前那套「text + has-bg」的六个。主题按形状调过色，形状变了预览就得跟着变，
+       否则主题作者看到的是 A、装上去是 B。 */
+    const TOOLS = [
+        ['plus', '添加', 'el-button--primary', 'add'],
+        ['refresh', '刷新', '', 'refresh'],
+        ['fold', '管理', '', 'dlg-manage'],
+    ]
+
+    $('#toolbar').innerHTML = TOOLS.map(([ic, text, type, act]) =>
+        '<button type="button" class="el-button ' + type + ' auto-button" data-act="' + act + '">' +
+        '<i class="el-icon" data-icon="' + ic + '"></i><span>' + text + '</span></button>'
     ).join('')
 
     const DATA = window.ANI_DATA || []
     const tag = (type, inner) => '<span class="el-tag el-tag--' + type + ' el-tag--light"><span class="el-tag__content">' + inner + '</span></span>'
 
+    /* 海报卡（上游 home/AniCoverView.vue）。改版前这里是「左图右文 + 右侧三颗圆按钮」的列表卡，
+       那套 DOM 上游已经拆了：现在标题和字幕组压在封面下缘的渐变上，季度/集数/备用源在封面外面。 */
     const card = a =>
-        '<div><div class="el-card is-never-shadow"><div class="el-card__body">' +
-        '<div class="list-card-content">' +
-        '<div class="list-card-image-container"><img src="' + esc(a.cover) + '" alt="' + esc(a.t) + '" class="list-card-image" data-act="cover" loading="lazy" referrerpolicy="no-referrer"></div>' +
-        '<div class="list-card-info"><div class="list-card-info-inner">' +
-        '<div class="flex"><span class="el-text is-truncated is-line-clamp list-card-title" data-act="bgm" style="-webkit-line-clamp:1" data-tip="' + esc(a.t) + '" data-tip-place="top">' + esc(a.t) + '</span></div>' +
-        '<div class="list-card-score-container"><h4 class="list-card-score" data-act="rate">' + esc(a.score) + '</h4></div>' +
-        '<span class="el-text el-text--small list-card-url">https://mikanani.me/RSS/Bangumi?bangumiId=' + (3000 + a.t.length * 7) + '</span>' +
-        '<div class="list-card-tags gtc3">' +
-        tag('primary', ' 第 ' + a.s + ' 季 ') +
-        (a.on ? tag('success', ' 已启用 ') : tag('info', ' 未启用 ')) +
-        tag('info', '<span class="el-text el-text--small is-line-clamp list-card-subgroup" style="-webkit-line-clamp:1" data-tip="' + esc(a.sub) + '">' + esc(a.sub) + '</span>') +
+        '<div class="cover-card">' +
+        '<div class="cover-image-container' + (a.on ? '' : ' is-disabled') + '">' +
+        '<img class="cover-image" src="' + esc(a.cover) + '" alt="' + esc(a.t) + '" data-act="cover" loading="lazy" referrerpolicy="no-referrer">' +
+        (a.score ? '<button class="cover-score" type="button" data-act="rate"><span>' + esc(a.score) + '</span></button>' : '') +
+        (a.on ? '' : '<div class="cover-disabled-label">未启用</div>') +
+        '<div class="cover-overlay">' +
+        '<span class="el-text cover-title" data-act="bgm" data-tip="' + esc(a.t) + '" data-tip-place="top">' + esc(a.t) + '</span>' +
+        '<div class="cover-meta"><div class="cover-meta-line">' +
+        '<span class="cover-meta-fixed">第 ' + a.s + ' 季</span>' +
+        '<span class="cover-subgroup">' + esc(a.sub) + '</span>' +
+        '</div></div>' +
+        '</div>' +
+        '<div class="cover-actions">' +
+        /* 上游这颗是 el-dropdown（trigger=click）：列表 / 封面 / 评分 / 刷新 / 刮削 / 编辑 / 删除。
+           预览只放触发键和那套下拉，八项不往卡片里塞 */
+        '<button type="button" class="el-button cover-action-button is-circle" data-act="ani-more" aria-label="更多">' +
+        '<i class="el-icon" data-icon="fold"></i></button>' +
+        '</div>' +
+        '</div>' +
+        '<div class="cover-below-meta">' +
+        tag('danger', a.ova ? 'ova' : 'tv') +
         tag('warning', esc(a.ep)) +
-        tag('danger', a.ova ? ' ova ' : ' tv ') +
-        (a.sb ? tag('primary', ' 备用RSS ') : '') +
+        (a.sb ? tag('primary', '备用RSS') : '') +
+        tag('info', esc(a.ago)) +
         '</div>' +
-        '<span class="el-text el-text--info el-text--small list-card-time">' + esc(a.ago) + '</span>' +
-        '</div>' +
-        '<div class="list-card-actions">' +
-        '<button type="button" class="el-button is-text is-has-bg list-card-playlist" data-act="playlist"><span class=""><i class="el-icon" data-icon="files"></i></span></button>' +
-        '<div class="list-card-spacer list-card-playlist"></div>' +
-        '<button type="button" class="el-button is-text is-has-bg" data-act="dlg-edit"><span class=""><i class="el-icon" data-icon="edit"></i></span></button>' +
-        '<div class="list-card-spacer"></div>' +
-        '<button type="button" class="el-button el-button--danger is-text is-has-bg" data-act="dlg-del"><span class=""><i class="el-icon" data-icon="del"></i></span></button>' +
-        '</div></div></div></div></div></div>'
+        '</div>'
 
     let filterText = '', filterEnable = '已启用'
 
@@ -322,21 +342,19 @@
         items.forEach(a => { if (weeks.indexOf(a.w) < 0) weeks.push(a.w) })
         $('#list').innerHTML = weeks.length
             ? weeks.map(w => '<div><h2 class="list-week-title">' + esc(w) + '</h2>' +
-                '<div class="grid-container">' + items.filter(a => a.w === w).map(card).join('') + '</div></div>').join('')
+                '<div class="grid-container cover-grid-container">' + items.filter(a => a.w === w).map(card).join('') + '</div></div>').join('')
             : '<div class="el-empty" style="padding:60px 0"><div class="el-empty__description"><p>暂无数据</p></div></div>'
         fillIcons($('#list'))
+        /* 页头副标题写的是过滤后的条数（上游 SubscriptionListView 把 total 报给 SubscriptionView） */
+        const cnt = $('#subs-count')
+        if (cnt) cnt.textContent = '共 ' + items.length + ' 个订阅'
     }
 
     renderList()
+
+    /* 列数不再由这里算：新版海报墙用 repeat(auto-fill, minmax(160px,1fr))，
+       宽度一变浏览器自己重排，少一处要跟着窗口改的 JS。 */
     $('#search').addEventListener('input', e => { filterText = e.target.value.trim(); renderList() })
-
-    function autoColumns() {
-        const w = $('#app').offsetWidth
-        document.documentElement.style.setProperty('--ani-grid-columns', Math.max(1, Math.min(4, Math.floor(w / 400))))
-    }
-
-    autoColumns()
-    window.addEventListener('resize', autoColumns)
 
     /* ==================== 弹窗内容 ==================== */
 
@@ -505,33 +523,59 @@
         '<div><p style="text-align:right;margin:8px 4px 0;font-size:var(--el-font-size-extra-small);color:var(--el-text-color-secondary)">共 ' +
         DATA.length + ' 项</p></div>'
 
-    /* ---------- 日志（home/Logs.vue） ---------- */
+    /* ---------- 日志（home/LogsView.vue）——独立页面，四列列表 ---------- */
+    const logLevels = ['DEBUG', 'INFO', 'WARN', 'ERROR']
+    const logLoggers = ['RssUtil', 'TorrentUtil', 'RenameUtil', 'ScrapeUtil', 'ConfigUtil']
     const LOGS = [
-        ['INFO', 'RssUtil', '开始刷新全部订阅 (共 ' + DATA.length + ' 项)'],
-        ['INFO', 'RssUtil', (DATA[0] || {}).t + ' 发现新集数 E07'],
-        ['INFO', 'TorrentUtil', '已推送到下载器: qBittorrent'],
-        ['DEBUG', 'TorrentUtil', 'torrent hash = 8f2a1c9e04b7… size = 512.40 MiB'],
-        ['WARN', 'RssUtil', (DATA[1] || {}).t + ' RSS 超时，切换到备用 RSS'],
-        ['INFO', 'ScrapeUtil', '刮削完成，已写入 tvshow.nfo / episode.nfo'],
-        ['INFO', 'RenameUtil', '重命名: [桜都字幕组] S02E07.mkv -> S02E07.mkv'],
-        ['ERROR', 'ScrapeUtil', 'TMDB 请求失败: 429 Too Many Requests，30s 后重试'],
-        ['INFO', 'RssUtil', '刷新结束，新增 1 项，耗时 7.2s'],
-    ]
+        ['INFO', 'RssUtil', 'scheduler-1', '开始刷新全部订阅 (共 ' + DATA.length + ' 项)'],
+        ['INFO', 'RssUtil', 'scheduler-1', (DATA[0] || {}).t + ' 发现新集数 E07'],
+        ['INFO', 'TorrentUtil', 'pool-2', '已推送到下载器: qBittorrent'],
+        ['DEBUG', 'TorrentUtil', 'pool-2', 'torrent hash = 8f2a1c9e04b7… size = 512.40 MiB'],
+        ['WARN', 'RssUtil', 'scheduler-1', (DATA[1] || {}).t + ' RSS 超时，切换到备用 RSS'],
+        ['INFO', 'ScrapeUtil', 'pool-3', '刮削完成，已写入 tvshow.nfo / episode.nfo'],
+        ['INFO', 'RenameUtil', 'pool-3', '重命名: [桜都字幕组] S02E07.mkv -> S02E07.mkv'],
+        ['ERROR', 'ScrapeUtil', 'pool-4', 'TMDB 请求失败: 429 Too Many Requests，30s 后重试'],
+        ['INFO', 'RssUtil', 'scheduler-1', '刷新结束，新增 1 项，耗时 7.2s'],
+    ].map(([level, logger, thread, msg], i) => ({
+        level: level,
+        logger: logger,
+        thread: thread,
+        msg: msg,
+        time: '21:04:' + String(11 + i).padStart(2, '0'),
+        stamp: '2026-08-02 21:04:' + String(11 + i).padStart(2, '0'),
+    }))
 
-    const logsBody =
-        '<div class="header auto-flex" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<div class="el-checkbox-group">' + checks([['DEBUG', true], ['INFO', true], ['WARN', true], ['ERROR', true]]) + '</div>' +
-        '<div style="display:flex;align-items:center">' +
-        sel('', ['RssUtil', 'TorrentUtil', 'RenameUtil', 'ScrapeUtil', 'ConfigUtil'], 260, '类名') +
-        '<div class="spacer"></div>' + btn('', {text: true, bg: true, icon: 'download'}) +
-        '<div class="spacer"></div>' + btn('', {text: true, bg: true, icon: 'refresh'}) +
-        '<div class="spacer"></div>' + btn('', {text: true, bg: true, icon: 'del'}) +
-        '</div></div>' +
-        '<div class="content">' + scroll(450,
-            '<div style="min-height:400px">' + LOGS.map((l, i) =>
-                '<span class="pv-logline pv-log-' + l[0] + '"><i>2026-08-02 21:04:' + String(11 + i).padStart(2, '0') + '</i>  ' +
-                l[0].padEnd(5) + '  ' + l[1].padEnd(12) + '  ' + esc(l[2]) + '</span>').join('') + '</div>') +
-        '</div>'
+    /* 两个多选筛选。空数组 = 全放行（上游默认四级全选、来源不限） */
+    let logText = ''
+    let logLevelPicked = []
+    let logLoggerPicked = []
+
+    function renderLogs() {
+        const box = $('#log-list')
+        if (!box) return
+        const items = LOGS.filter(l =>
+            (!logText || l.msg.toLowerCase().indexOf(logText.toLowerCase()) >= 0) &&
+            (!logLevelPicked.length || logLevelPicked.indexOf(l.level) >= 0) &&
+            (!logLoggerPicked.length || logLoggerPicked.indexOf(l.logger) >= 0))
+        box.innerHTML = items.length
+            ? items.map(l =>
+                '<div class="log-entry level-' + l.level.toLowerCase() + '">' +
+                '<time class="log-time" data-tip="' + l.stamp + '" data-tip-place="top">' + l.time + '</time>' +
+                '<span class="log-level">' + l.level + '</span>' +
+                '<div class="log-source" data-tip="' + l.logger + '" data-tip-place="top">' +
+                '<span class="logger-name">' + l.logger + '</span>' +
+                '<span class="thread-name">' + l.thread + '</span></div>' +
+                '<pre class="log-message">' + esc(l.msg) + '</pre></div>').join('')
+            : '<div class="el-empty" style="padding:48px 0"><div class="el-empty__description">' +
+              '<p>' + (LOGS.length ? '没有匹配的日志' : '暂无日志') + '</p></div></div>'
+        /* 页头副标题两个数都报（共 N 条 · 显示 M 条），筛完能对账 —— 上游就是这么写的 */
+        const cnt = $('#logs-count')
+        if (cnt) cnt.textContent = '共 ' + LOGS.length + ' 条 · 显示 ' + items.length + ' 条'
+        fillIcons(box)
+    }
+
+    /* 日志列表跟着页面一起备好，切侧栏时是现成的（页头副标题也在这一趟里写） */
+    renderLogs()
 
     /* ---------- 添加订阅（home/Add.vue） ---------- */
     /* 每个源一个 tab：RSS 文本域 → 右对齐的浏览按钮 → 两行小字说明，表单留 260px 底高 */
@@ -1183,7 +1227,6 @@
     $('#dialogs').innerHTML =
         dialog('dlg-download', '下载', downloadBody, '', '50%') +
         dialog('dlg-manage', '管理', manageBody, '', '50%') +
-        dialog('dlg-logs', '日志', logsBody, '', '50%', 'logs-dialog') +
         dialog('dlg-add', '添加订阅', addBody + addFooter, '', '50%') +
         dialog('dlg-edit', '修改订阅', editBody + editFooter, '', '50%') +
         dialog('dlg-settings', '设置', settingsBody + '<div class="action">' + okCancel + '</div>', '', '50%') +
@@ -1282,6 +1325,19 @@
                 '<p><strong style="color: var(--el-color-danger);">将会删除整个文件夹, 是否执意继续?<br>' +
                 '/downloads/anime/转生史莱姆日记 (2021)/Season 1</strong></p>')
             if (act === 'login') return toast('演示页面，不会真的登录')
+            if (act === 'mb-clear-logs') return openMessageBox('警告', '<p>确定要清空所有日志吗？清空后不可恢复。</p>')
+            if (act === 'logs-download') return toast('演示页面：会下载一份 ani-rss.log')
+            if (act === 'logs-refresh') return toast('演示页面：不会真的去后端取日志')
+            /* 侧栏切换：订阅页和日志页共用同一套壳，只换 main 里那一块。
+               下载 / 设置还是弹窗（上游就是弹窗，只有日志被改成了页面）。 */
+            if (act === 'nav-home' || act === 'nav-subs' || act === 'nav-logs') {
+                $$('#nav .el-menu-item').forEach(li => li.classList.toggle('is-active', li.dataset.act === act))
+                const logs = act === 'nav-logs'
+                const subs = $('#subs-view'), logView = $('#logs-view')
+                if (subs) subs.style.display = logs ? 'none' : ''
+                if (logView) logView.style.display = logs ? '' : 'none'
+                return
+            }
             /* 卡片上这几处上游都会开弹窗，之前预览只弹一句 toast —— 那几个弹窗没画过。
                只有标题是真跳外链，保持一句提示。 */
             if (act === 'cover') return openDialog('dlg-cover')
@@ -1477,6 +1533,22 @@
         }))
     }
 
+    /* 多选 select 的已选项在框里排成一串 el-tag（上游是 multiple + collapse-tags） */
+    function renderPickTags(s, key, picked) {
+        const box = s.querySelector('.el-select__selection')
+        if (!box) return
+        if (!picked.length) {
+            box.innerHTML = '<div class="el-select__selected-item el-select__placeholder is-transparent">' +
+                '<span data-value>' + (key === 'log-level' ? '日志等级' : '来源') + '</span></div>'
+            return
+        }
+        box.innerHTML = picked.map(v =>
+            '<div class="el-select__selected-item"><span class="el-tag el-tag--info el-tag--light">' +
+            '<span class="el-tag__content">' + esc(v) + '</span>' +
+            '<i class="el-tag__close el-icon" data-icon="close"></i></span></div>').join('')
+        fillIcons(box)
+    }
+
     document.addEventListener('click', e => {
         if (e.target.closest('[data-act]')) return
         const s = e.target.closest('.el-select[data-select]')
@@ -1485,17 +1557,44 @@
             return
         }
         const key = s.dataset.select
+        /* 日志页那两个是 multiple：选中不关下拉，选完还能接着挑 */
+        const multi = key === 'log-level' || key === 'log-logger'
         if (popper && popper.dataset.owner === key) return killPopper()
-        const cur = s.querySelector('[data-value]').textContent.trim()
+        const dv = s.querySelector('[data-value]')
+        const cur = dv ? dv.textContent.trim() : ''
+        const picked = key === 'log-level' ? logLevelPicked : key === 'log-logger' ? logLoggerPicked : []
         const p = makePopper(s, 'el-select__popper',
             '<div class="el-select-dropdown"><div class="el-select-dropdown__list">' +
-            (SELECTS[key] || []).map(v => '<li class="el-select-dropdown__item' + (v === cur ? ' selected is-selected' : '') + '">' + esc(v) + '</li>').join('') +
+            (SELECTS[key] || []).map(v => {
+                const on = multi ? picked.indexOf(v) >= 0 : v === cur
+                const cls = 'el-select-dropdown__item' + (on ? ' selected is-selected' : '')
+                /* 等级那一列每项是「彩点 + 名字 …… 条数」，上游 level-option 就长这样 */
+                if (key === 'log-level') {
+                    return '<li class="' + cls + '" data-v="' + esc(v) + '"><div class="level-option">' +
+                        '<span class="level-option-name"><span class="level-dot is-' + v.toLowerCase() + '"></span>' +
+                        esc(v) + '</span><span class="level-count">' +
+                        LOGS.filter(l => l.level === v).length + '</span></div></li>'
+                }
+                return '<li class="' + cls + '" data-v="' + esc(v) + '">' + esc(v) + '</li>'
+            }).join('') +
             '</div></div>', key)
         p.querySelectorAll('.el-select-dropdown__item').forEach(li => li.addEventListener('click', () => {
+            const v = li.dataset.v
+            if (multi) {
+                const arr = key === 'log-level' ? logLevelPicked : logLoggerPicked
+                const at = arr.indexOf(v)
+                if (at >= 0) arr.splice(at, 1)
+                else arr.push(v)
+                li.classList.toggle('selected')
+                li.classList.toggle('is-selected')
+                renderPickTags(s, key, arr)
+                renderLogs()
+                return
+            }
             const label = s.querySelector('[data-value]')
             label.textContent = li.textContent
             label.parentElement.classList.remove('is-transparent')
-            if (SELECTS[key] && SELECTS[key][0] === '全部' && s.closest('#header')) { filterEnable = li.textContent; renderList() }
+            if (SELECTS[key] && SELECTS[key][0] === '全部' && s.closest('.subscription-filters')) { filterEnable = li.textContent; renderList() }
             killPopper()
         }))
     })
@@ -1503,6 +1602,10 @@
     /* 首页那两个选择器单独注册（结构写在 HTML 里） */
     SELECTS['month'] = ['2026-07', '2026-04', '2026-01', '2025-10']
     SELECTS['enable'] = ['全部', '已启用', '未启用']
+    SELECTS['log-level'] = logLevels
+    SELECTS['log-logger'] = logLoggers
+    const logSearchBox = $('#log-search')
+    if (logSearchBox) logSearchBox.addEventListener('input', ev => { logText = ev.target.value.trim(); renderLogs() })
     $$('.el-select[data-select="enable"]').forEach(s => s.addEventListener('click', () => setTimeout(() => {
         const p = popper
         if (!p) return
@@ -1621,7 +1724,7 @@
             const d = (isWidth ? 100 : 1) * (+step.dataset.step)
             const v = (parseInt(input.value, 10) || 0) + d
             input.value = isWidth ? Math.max(1200, Math.min(2400, v)) : Math.max(0, v)
-            if (isWidth) { $('#app').style.maxWidth = input.value + 'px'; autoColumns() }
+            if (isWidth) { $('#app').style.maxWidth = input.value + 'px' }
         }
     })
 

@@ -167,22 +167,22 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 12px !important;
     box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .9) !important;
 }
 
-.list-card-title {
+.cover-title {
     text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
 }
 
-.list-card-score {
-    color: #FF6B9D !important;
+.cover-score {
+    background-color: #FF6B9D !important;
     text-shadow: 0 0 16px rgba(255, 107, 157, .6) !important;
 }
 
@@ -228,7 +228,7 @@ html .el-dialog__title,
 html .el-collapse-item__header,
 html .title-h2,
 html .list-week-title,
-html .list-card-title {
+html .cover-title {
     font-family: "Kaiti SC", "STKaiti", KaiTi, "楷体", "Noto Serif SC", serif;
     font-weight: 600;
     letter-spacing: .06em;
@@ -309,7 +309,7 @@ html .el-button.is-circle {
 }
 
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     padding-left: 8px;
     padding-right: 8px;
 }

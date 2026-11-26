@@ -403,12 +403,12 @@ html .el-message-box__headerbtn:hover {
     transform: translateY(-1px);
 }
 
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     font-weight: 700 !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 14px !important;
 }
 
@@ -446,7 +446,7 @@ html .el-message-box__headerbtn:hover {
 }
 
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     padding-left: 8px;
     padding-right: 8px;
 }

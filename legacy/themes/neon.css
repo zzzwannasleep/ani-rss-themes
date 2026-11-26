@@ -405,17 +405,18 @@ html .el-message-box__headerbtn:hover {
     border-color: rgba(0, 229, 255, .4);
 }
 
-#header {
-    border-bottom: 1px solid var(--el-border-color-extra-light);
+.app-nav {
+    /* 顶栏横条改成左侧竖栏：边线跟着从下沿换到右沿 */
+    border-right: 1px solid var(--el-border-color-extra-light);
 }
 
-.list-card-score {
-    color: #FF3D71 !important;
+.cover-score {
+    background-color: #FF3D71 !important;
     text-shadow: 0 0 14px rgba(255, 61, 113, .6) !important;
     font-variant-numeric: tabular-nums !important;
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 0 !important;
     border-color: rgba(0, 229, 255, .25) !important;
 }

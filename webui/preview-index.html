@@ -124,7 +124,8 @@
             justify-content: space-between;
             gap: 20px;
             flex-wrap: wrap;
-            margin-bottom: clamp(10px, 1.8vh, 22px);
+            /* 1366×768 那一档只剩 7px 余量：lede 里每多一句提示，就先从这儿让几像素出来 */
+            margin-bottom: clamp(6px, 1.2vh, 18px);
         }
 
         .hero-text {
@@ -738,7 +739,9 @@
             <p class="eyebrow"><b class="js-count">9</b> 款同一套功能，只是长得不同</p>
             <h1>给 ani-rss 换一张<span>好看的脸</span></h1>
             <p class="lede">每张卡里跑的都是真界面，不是截图 —— 点开就能翻页、开关、改设置；
-                数据是内置的假数据，随便折腾。卡片右上角的 <b>⤓ zip</b> 直接下那一款的最新压缩包。</p>
+                数据是内置的假数据，随便折腾。卡片右上角的 <b>⤓ zip</b> 直接下那一款的最新压缩包。
+                想看「字幕组名字右边那颗绿色的<b>已订阅</b>」：订阅 → 添加订阅 → Mikan →
+                「浏览 Mikan 番剧列表」→ 展开任意一部番（演示站会替你展开第一部）。</p>
             <div class="facts">
                 <span>同一套<b>响应式</b>代码，不是另做的手机版</span>
                 <span>装一款就够，<b>约 14 MB</b>（含在线播放器）</span>

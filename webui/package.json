@@ -21,6 +21,7 @@
     "test:about": "node shared/tools/about-check.mjs",
     "test:layout": "node shared/tools/dialog-layout.mjs",
     "test:preview": "node shared/tools/preview-fit.mjs",
+    "audit:themes": "node shared/tools/theme-selector-audit.mjs",
     "test:lift": "node shared/tools/lift-audit.mjs"
   },
   "dependencies": {

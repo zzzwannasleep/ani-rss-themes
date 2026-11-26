@@ -247,25 +247,25 @@ html .el-select__wrapper.is-focused {
     box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
 
-html .logs-dialog {
+html .logs-page {
     letter-spacing: .02em;
 }
 
 /* 评分：项目写死的品红换成磷光绿 */
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     text-shadow: 0 0 12px rgba(56, 224, 123, .5) !important;
 }
 
 /* 封面：直角 + 单色化，融进终端，hover 才还原真彩 */
-.list-card-image {
+.cover-image {
     border-radius: 0 !important;
     border-color: var(--el-border-color-dark) !important;
     filter: saturate(.5) contrast(1.08);
     transition: filter .2s linear;
 }
 
-.list-card-image:hover {
+.cover-image:hover {
     filter: none;
 }
 
@@ -309,14 +309,14 @@ html .logs-dialog {
 }
 
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     padding-left: 8px;
     padding-right: 8px;
 }
 
 /* 图标按钮不加方括号，纯图标加了会撑宽 */
-html .list-card-actions .el-button::before,
-html .list-card-actions .el-button::after {
+html .cover-actions .el-button::before,
+html .cover-actions .el-button::after {
     content: none;
 }
 

@@ -167,22 +167,22 @@ html .el-table .el-table-fixed-column--right.el-table__cell {
 }
 
 
-#header {
+.app-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.list-card-image {
+.cover-image {
     border-radius: 10px !important;
     box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .9) !important;
 }
 
-.list-card-title {
+.cover-title {
     text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
 }
 
-.list-card-score {
-    color: var(--el-color-primary) !important;
+.cover-score {
+    background-color: var(--el-color-primary) !important;
     text-shadow: 0 0 14px rgba(95, 211, 232, .5) !important;
 }
 
@@ -334,13 +334,13 @@ html .el-button.is-circle::after {
 }
 
 /* 卡片右侧的图标按钮：保持紧凑，否则会把字幕组标签挤到按钮底下 */
-html .list-card-actions .el-button {
+html .cover-actions .el-button {
     padding-left: 8px;
     padding-right: 8px;
 }
 
 /* 图标按钮不带左侧色条 */
-html .list-card-actions .el-button::after {
+html .cover-actions .el-button::after {
     display: none;
 }
 
